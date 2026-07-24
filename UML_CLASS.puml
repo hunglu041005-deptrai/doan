@@ -1,0 +1,144 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam class {
+    BackgroundColor White
+    ArrowColor Black
+    BorderColor Black
+}
+
+class User {
+    - id: int
+    - email: string
+    - password: string
+    - name: string
+    - phone: string
+    - role: enum
+    - created_at: datetime
+    + login(): bool
+    + register(): bool
+    + updateProfile(): bool
+    + changePassword(): bool
+}
+
+class Court {
+    - id: int
+    - name: string
+    - location: string
+    - latitude: float
+    - longitude: float
+    - price_per_hour: decimal
+    - description: text
+    - cover_image: string
+    - amenities: json
+    + getDetails(): array
+    + checkAvailability(): bool
+    + getTimeSlots(): array
+}
+
+class Booking {
+    - id: int
+    - user_id: int
+    - court_id: int
+    - booking_date: date
+    - start_time: time
+    - end_time: time
+    - total_price: decimal
+    - status: enum
+    - payment_status: enum
+    - payment_method: string
+    - created_at: datetime
+    + create(): bool
+    + cancel(): bool
+    + updateStatus(): bool
+    + checkOverlap(): bool
+}
+
+class Payment {
+    - id: int
+    - booking_id: int
+    - amount: decimal
+    - method: string
+    - transaction_id: string
+    - status: enum
+    - created_at: datetime
+    + processVNPay(): bool
+    + processMoMo(): bool
+    + processCash(): bool
+    + verifyCallback(): bool
+}
+
+class Review {
+    - id: int
+    - user_id: int
+    - court_id: int
+    - rating: int
+    - comment: text
+    - created_at: datetime
+    + submit(): bool
+    + getAverageRating(): float
+}
+
+class Product {
+    - id: int
+    - name: string
+    - description: text
+    - price: decimal
+    - stock: int
+    - category: string
+    - image: string
+    + updateStock(): bool
+    + getDetails(): array
+}
+
+class Order {
+    - id: int
+    - user_id: int
+    - total_amount: decimal
+    - status: enum
+    - payment_status: enum
+    - created_at: datetime
+    + create(): bool
+    + updateStatus(): bool
+    + getItems(): array
+}
+
+class Coach {
+    - id: int
+    - name: string
+    - phone: string
+    - email: string
+    - specialty: string
+    - price_per_session: decimal
+    - avatar: string
+    + getSchedule(): array
+    + updateAvailability(): bool
+}
+
+class TrainingRegistration {
+    - id: int
+    - user_id: int
+    - coach_id: int
+    - session_date: date
+    - session_time: time
+    - status: enum
+    - payment_status: enum
+    + register(): bool
+    + cancel(): bool
+}
+
+' Relationships
+User "1" --> "0..*" Booking : places
+User "1" --> "0..*" Review : writes
+User "1" --> "0..*" Order : places
+User "1" --> "0..*" TrainingRegistration : registers
+
+Court "1" --> "0..*" Booking : receives
+Court "1" --> "0..*" Review : has
+
+Booking "1" --> "1" Payment : has
+
+Order "1" --> "1..*" Product : contains
+
+Coach "1" --> "0..*" TrainingRegistration : conducts
+
+@enduml

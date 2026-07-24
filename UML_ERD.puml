@@ -1,0 +1,145 @@
+@startuml
+!define TABLE table
+!define PRIMARY_KEY primary_key
+!define FOREIGN_KEY foreign_key
+
+skinparam entity {
+    BackgroundColor White
+    BorderColor Black
+}
+
+TABLE "users" {
+  *id: INT PRIMARY_KEY
+  --
+  email: VARCHAR(255)
+  password: VARCHAR(255)
+  name: VARCHAR(100)
+  phone: VARCHAR(20)
+  role: ENUM('user','admin','coach')
+  created_at: TIMESTAMP
+}
+
+TABLE "courts" {
+  *id: INT PRIMARY_KEY
+  --
+  name: VARCHAR(255)
+  location: VARCHAR(255)
+  latitude: DECIMAL(10,8)
+  longitude: DECIMAL(11,8)
+  price_per_hour: DECIMAL(10,2)
+  description: TEXT
+  cover_image: VARCHAR(255)
+  amenities: JSON
+  created_at: TIMESTAMP
+}
+
+TABLE "bookings" {
+  *id: INT PRIMARY_KEY
+  --
+  user_id: INT FOREIGN_KEY
+  court_id: INT FOREIGN_KEY
+  booking_date: DATE
+  start_time: TIME
+  end_time: TIME
+  total_price: DECIMAL(10,2)
+  status: ENUM('pending','confirmed','cancelled','completed')
+  payment_status: ENUM('paid','pending','unpaid','failed')
+  payment_method: VARCHAR(50)
+  created_at: TIMESTAMP
+}
+
+TABLE "payments" {
+  *id: INT PRIMARY_KEY
+  --
+  booking_id: INT FOREIGN_KEY
+  amount: DECIMAL(10,2)
+  method: VARCHAR(50)
+  transaction_id: VARCHAR(255)
+  status: ENUM('success','pending','failed')
+  created_at: TIMESTAMP
+}
+
+TABLE "reviews" {
+  *id: INT PRIMARY_KEY
+  --
+  user_id: INT FOREIGN_KEY
+  court_id: INT FOREIGN_KEY
+  rating: INT
+  comment: TEXT
+  created_at: TIMESTAMP
+}
+
+TABLE "products" {
+  *id: INT PRIMARY_KEY
+  --
+  name: VARCHAR(255)
+  description: TEXT
+  price: DECIMAL(10,2)
+  stock: INT
+  category: VARCHAR(100)
+  image: VARCHAR(255)
+  created_at: TIMESTAMP
+}
+
+TABLE "orders" {
+  *id: INT PRIMARY_KEY
+  --
+  user_id: INT FOREIGN_KEY
+  total_amount: DECIMAL(10,2)
+  status: ENUM('pending','processing','shipped','delivered','cancelled')
+  payment_status: ENUM('paid','pending','unpaid')
+  created_at: TIMESTAMP
+}
+
+TABLE "order_items" {
+  *id: INT PRIMARY_KEY
+  --
+  order_id: INT FOREIGN_KEY
+  product_id: INT FOREIGN_KEY
+  quantity: INT
+  price: DECIMAL(10,2)
+}
+
+TABLE "coaches" {
+  *id: INT PRIMARY_KEY
+  --
+  user_id: INT FOREIGN_KEY
+  name: VARCHAR(100)
+  phone: VARCHAR(20)
+  email: VARCHAR(255)
+  specialty: VARCHAR(255)
+  price_per_session: DECIMAL(10,2)
+  avatar: VARCHAR(255)
+  created_at: TIMESTAMP
+}
+
+TABLE "training_registrations" {
+  *id: INT PRIMARY_KEY
+  --
+  user_id: INT FOREIGN_KEY
+  coach_id: INT FOREIGN_KEY
+  session_date: DATE
+  session_time: TIME
+  status: ENUM('pending','confirmed','cancelled','completed')
+  payment_status: ENUM('paid','pending','unpaid')
+  created_at: TIMESTAMP
+}
+
+' Relationships
+"users" ||--o{ "bookings" : places
+"users" ||--o{ "reviews" : writes
+"users" ||--o{ "orders" : places
+"users" ||--o{ "training_registrations" : registers
+
+"courts" ||--o{ "bookings" : receives
+"courts" ||--o{ "reviews" : has
+
+"bookings" ||--o| "payments" : has
+
+"orders" ||--o{ "order_items" : contains
+"products" ||--o{ "order_items" : included in
+
+"users" ||--o| "coaches" : is
+"coaches" ||--o{ "training_registrations" : conducts
+
+@enduml

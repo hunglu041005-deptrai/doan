@@ -1,0 +1,49 @@
+@startuml
+actor "Người dùng" as User
+participant "Trang web" as Web
+participant "API" as API
+participant "Database" as DB
+participant "Payment Gateway" as Payment
+participant "Email Service" as Email
+
+User -> Web: Chọn sân
+Web -> API: GET /api/courts
+API -> DB: Query courts
+DB --> API: Return courts
+API --> Web: Return courts
+Web --> User: Hiển thị danh sách sân
+
+User -> Web: Chọn ngày & giờ
+Web -> API: GET /api/time-slots
+API -> DB: Check availability
+DB --> API: Return available slots
+API --> Web: Return slots
+Web --> User: Hiển thị khung giờ trống
+
+User -> Web: Xác nhận đặt sân
+Web -> API: POST /api/bookings
+API -> DB: Create booking record
+DB --> API: Return booking ID
+API --> Web: Return booking ID
+
+Web -> User: Chọn phương thức thanh toán
+User -> Web: Chọn VNPay/MoMo/Tiền mặt
+
+alt Thanh toán VNPay/MoMo
+    Web -> Payment: Redirect to payment gateway
+    Payment -> User: Hiển thị trang thanh toán
+    User -> Payment: Xác nhận thanh toán
+    Payment -> Web: Callback với kết quả
+    Web -> API: Update payment status
+    API -> DB: Update booking status
+    API -> Email: Gửi email xác nhận
+    Email --> User: Email thanh toán thành công
+else Thanh toán tiền mặt
+    Web -> API: Set payment status = unpaid
+    API -> DB: Update booking
+    API -> Email: Gửi email đặt sân
+    Email --> User: Email đặt sân
+end
+
+Web --> User: Hiển thị trang thành công
+@enduml

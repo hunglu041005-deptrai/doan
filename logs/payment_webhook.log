@@ -1,0 +1,16 @@
+[2026-07-15 02:03:50] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-15 07:03:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"DATSAN00025 P2LMLZUJ\/862901","transferType":"in","description":"BankAPINotify DATSAN00025 P2LMLZUJ\/862901","transferAmount":80000,"referenceCode":"FT26196592233560","accumulated":0,"id":68267865}
+[2026-07-15 02:03:50] AUTH FAIL. Header: 
+[2026-07-15 02:06:26] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-15 07:06:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"DATSAN00026 P2LMLWR6\/863482","transferType":"in","description":"BankAPINotify DATSAN00026 P2LMLWR6\/863482","transferAmount":80000,"referenceCode":"FT26196450895747","accumulated":0,"id":68268082}
+[2026-07-15 02:06:26] AUTH FAIL. Header: 
+[2026-07-15 02:07:52] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-15 07:07:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"MBCT LU DANG HUNG chuyen tien D2GKERH5\/259624","transferType":"out","description":"BankAPINotify MBCT LU DANG HUNG chuyen tien D2GKERH5\/259624","transferAmount":160000,"referenceCode":"FT26196901379988","accumulated":0,"id":68268204}
+[2026-07-15 02:07:52] AUTH FAIL. Header: 
+[2026-07-15 02:08:49] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-15 07:08:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"DATSAN00027 P2LMLVQQ\/864079","transferType":"in","description":"BankAPINotify DATSAN00027 P2LMLVQQ\/864079","transferAmount":80000,"referenceCode":"FT26196022060552","accumulated":0,"id":68268301}
+[2026-07-15 02:08:49] AUTH FAIL. Header: 
+[2026-07-15 02:10:11] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-15 07:10:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"MBCT LU DANG HUNG chuyen tien D2GKE4WS\/276609","transferType":"out","description":"BankAPINotify MBCT LU DANG HUNG chuyen tien D2GKE4WS\/276609","transferAmount":80000,"referenceCode":"FT26196292644250","accumulated":0,"id":68268423}
+[2026-07-15 02:10:11] AUTH FAIL. Header: 
+[2026-07-15 02:12:22] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-15 07:12:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"DATSAN00028 P2LMLH6K\/864869","transferType":"in","description":"BankAPINotify DATSAN00028 P2LMLH6K\/864869","transferAmount":160000,"referenceCode":"FT26196195019368","accumulated":0,"id":68268627}
+[2026-07-15 02:12:22] AUTH FAIL. Header: 
+[2026-07-15 02:12:44] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-15 07:12:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"MBCT LU DANG HUNG chuyen tien D2GKESD7\/295365","transferType":"out","description":"BankAPINotify MBCT LU DANG HUNG chuyen tien D2GKESD7\/295365","transferAmount":160000,"referenceCode":"FT26196009915156","accumulated":0,"id":68268668}
+[2026-07-15 02:12:44] AUTH FAIL. Header: 
+[2026-07-15 02:16:25] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-15 07:16:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"DATSAN00029 P2LML5ZY\/865845","transferType":"in","description":"BankAPINotify DATSAN00029 P2LML5ZY\/865845","transferAmount":80000,"referenceCode":"FT26196304426890","accumulated":0,"id":68268985}
+[2026-07-15 02:16:25] AUTH FAIL. Header: 

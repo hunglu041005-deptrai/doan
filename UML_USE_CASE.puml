@@ -1,0 +1,68 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Khách hàng" as Guest
+actor "Người dùng" as User
+actor "Admin" as Admin
+actor "Huấn luyện viên" as Coach
+
+rectangle "Hệ thống đặt sân cầu lông" {
+    usecase "Xem danh sách sân" as UC1
+    usecase "Tìm kiếm sân" as UC2
+    usecase "Xem chi tiết sân" as UC3
+    usecase "Đăng ký tài khoản" as UC4
+    usecase "Đăng nhập" as UC5
+    usecase "Đặt sân" as UC6
+    usecase "Thanh toán online" as UC7
+    usecase "Xem lịch sử đặt sân" as UC8
+    usecase "Hủy đặt sân" as UC9
+    usecase "Đánh giá sân" as UC10
+    usecase "Mua dụng cụ" as UC11
+    usecase "Đăng ký huấn luyện" as UC12
+    usecase "Quản lý sân" as UC13
+    usecase "Quản lý booking" as UC14
+    usecase "Quản lý người dùng" as UC15
+    usecase "Xem báo cáo doanh thu" as UC16
+    usecase "Quản lý cửa hàng" as UC17
+    usecase "Quản lý huấn luyện viên" as UC18
+    usecase "Quản lý lịch tập" as UC19
+}
+
+' Khách hàng
+Guest --> UC1
+Guest --> UC2
+Guest --> UC3
+Guest --> UC4
+Guest --> UC5
+
+' Người dùng
+User --> UC1
+User --> UC2
+User --> UC3
+User --> UC5
+User --> UC6
+User --> UC7
+User --> UC8
+User --> UC9
+User --> UC10
+User --> UC11
+User --> UC12
+
+' Admin
+Admin --> UC13
+Admin --> UC14
+Admin --> UC15
+Admin --> UC16
+Admin --> UC17
+Admin --> UC18
+
+' Huấn luyện viên
+Coach --> UC5
+Coach --> UC19
+
+' Relationships
+UC6 --> UC7 : <<include>>
+UC11 --> UC7 : <<include>>
+UC12 --> UC7 : <<include>>
+@enduml

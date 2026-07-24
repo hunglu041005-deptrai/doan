@@ -1,0 +1,48 @@
+@startuml
+start
+:Truy cập trang đặt sân;
+:Chọn sân từ danh sách;
+
+if (Đã đăng nhập?) then (Không)
+    :Chuyển đến trang đăng nhập;
+    :Đăng ký/Đăng nhập;
+else (Có)
+endif
+
+:Chọn ngày đặt;
+:Chọn khung giờ;
+
+note right
+  Kiểm tra tình trạng
+  sẵn có real-time
+end note
+
+if (Sân còn trống?) then (Không)
+    :Hiển thị thông báo;
+    :Chọn khung giờ khác;
+else (Có)
+endif
+
+:Nhập thông tin đặt sân;
+:Chọn phương thức thanh toán;
+
+if (Phương thức thanh toán) then (VNPay)
+    :Chuyển đến VNPay;
+    :Thanh toán qua VNPay;
+elseif (MoMo) then (MoMo)
+    :Chuyển đến MoMo;
+    :Thanh toán qua MoMo;
+elseif (Tiền mặt) then (Tiền mặt)
+    :Đặt trạng thái unpaid;
+endif
+
+if (Thanh toán thành công?) then (Có)
+    :Cập nhật trạng thái booking;
+    :Gửi email xác nhận;
+    :Hiển thị trang thành công;
+    stop
+else (Không)
+    :Hiển thị thông báo lỗi;
+    :Thử lại hoặc chọn phương thức khác;
+endif
+@enduml

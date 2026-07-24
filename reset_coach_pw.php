@@ -1,0 +1,5 @@
+if(){
+   echo :;
+} else {
+   echo
+}

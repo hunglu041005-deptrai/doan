@@ -1,0 +1,104 @@
+DANH SÁCH 80 SẢN PHẨM CẦN HÌNH ẢNH
+=====================================
+
+🏸 VỢT CẦU LÔNG (20 sản phẩm):
+1. Vợt Yonex Arcsaber 11
+2. Vợt Victor Thruster K9900
+3. Vợt Li-Ning Windstorm 78
+4. Vợt Mizuno Fortius Tour F
+5. Vợt Yonex Voltric Z-Force II
+6. Vợt Victor Jetspeed S12
+7. Vợt Li-Ning Turbo Charging 75
+8. Vợt Yonex Duora 10
+9. Vợt Victor Auraspeed 90K
+10. Vợt Li-Ning N90 IV
+11. Vợt Yonex Nanoray 900
+12. Vợt Victor Hypernano X800
+13. Vợt Li-Ning Woods N90
+14. Vợt Yonex Astrox 88D
+15. Vợt Victor DriveX 9X
+16. Vợt Li-Ning Flame N55
+17. Vợt Yonex Muscle Power 29
+18. Vợt Victor Brave Sword 12
+19. Vợt Li-Ning Super Series SS99
+20. Vợt Yonex Carbonex 8000
+
+👟 GIÀY THỂ THAO (20 sản phẩm):
+21. Giày Yonex Power Cushion 65Z
+22. Giày Victor A922
+23. Giày Li-Ning AYTN025
+24. Giày Mizuno Wave Fang SS2
+25. Giày Yonex Aerus 3
+26. Giày Victor P9200
+27. Giày Li-Ning AYTM085
+28. Giày Yonex SHB-03Z
+29. Giày Victor A960
+30. Giày Li-Ning AYTN039
+31. Giày Yonex Power Cushion Comfort Z
+32. Giày Victor A501
+33. Giày Li-Ning AYTM099
+34. Giày Yonex SHB-65Z2
+35. Giày Victor A730
+36. Giày Li-Ning AYTN052
+37. Giày Yonex Aerus Z
+38. Giày Victor A362
+39. Giày Li-Ning AYTM105
+40. Giày Yonex SHB-02LTD
+
+👕 QUẦN ÁO (20 sản phẩm):
+41. Áo Yonex 10274EX
+42. Quần Victor R-3096
+43. Áo Li-Ning AAYN011
+44. Quần Yonex 15048EX
+45. Áo Victor T-75001
+46. Quần Li-Ning AAPN013
+47. Áo Yonex 20599EX
+48. Quần Victor R-04002
+49. Áo Li-Ning AAYN025
+50. Quần Yonex 120047BCR
+51. Áo Victor T-85002
+52. Quần Li-Ning AAPN027
+53. Áo Yonex 10275EX
+54. Quần Victor R-3098
+55. Áo Li-Ning AAYN039
+56. Quần Yonex 15049EX
+57. Áo Victor T-95003
+58. Quần Li-Ning AAPN041
+59. Áo Yonex 20600EX
+60. Quần Victor R-04005
+
+🎒 PHỤ KIỆN (20 sản phẩm):
+61. Túi Yonex Pro Racquet Bag
+62. Cước Victor VBS-68P
+63. Grip Li-Ning GP1000
+64. Túi Victor BR6211
+65. Cước Yonex BG80 Power
+66. Grip Victor GR262
+67. Túi Li-Ning ABSP368
+68. Cước Yonex BG66 Ultimax
+69. Grip Li-Ning GP2000
+70. Túi Victor BR6212
+71. Cước Victor VBS-70
+72. Grip Yonex AC102EX
+73. Túi Li-Ning ABSP372
+74. Cước Yonex BG65
+75. Grip Victor GR233
+76. Túi Victor BR6213
+77. Cước Li-Ning No.1
+78. Grip Yonex AC103EX
+79. Túi Li-Ning ABSP380
+80. Cước Victor VBS-66N
+
+=====================================
+HƯỚNG DẪN:
+- Vui lòng cung cấp 80 link ảnh theo thứ tự trên
+- Ảnh nên có kích thước tối thiểu 300x300px
+- Format: JPG, PNG, WebP
+- Ảnh chất lượng cao, rõ nét
+- Nền trắng hoặc trong suốt (nếu có thể)
+
+Ví dụ format trả lời:
+1. https://example.com/image1.jpg
+2. https://example.com/image2.jpg
+...
+=====================================
