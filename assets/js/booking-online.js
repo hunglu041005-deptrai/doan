@@ -601,10 +601,64 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             const noteBox = document.getElementById('transferWaitingNote');
             if (noteBox) {
-                noteBox.innerHTML = `<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:1rem 1.2rem;margin-top:1rem;"><div style="font-weight:700;color:#166534;margin-bottom:.4rem;"><i class="fas fa-circle-notch fa-spin me-1"></i>Dang cho thanh toan tu dong</div><div style="font-size:.84rem;color:#15803d;margin-bottom:.35rem;">Chuyen khoan noi dung: <strong style="font-family:monospace;background:#dcfce7;padding:2px 7px;border-radius:4px;">${ref}</strong></div><div style="font-size:.78rem;color:#166534;"><i class="fas fa-magic me-1"></i>He thong <strong>tu dong xac nhan</strong> khi nhan duoc tien.</div><div style="margin-top:.6rem;height:4px;background:#dcfce7;border-radius:4px;overflow:hidden;"><div id="pollingProgressBar" style="height:100%;background:#16a34a;width:0%;transition:width 5s linear;"></div></div></div>`;
+                noteBox.innerHTML = `
+                <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:1rem 1.2rem;margin-top:1rem;">
+                    <div style="font-weight:700;color:#166534;margin-bottom:.4rem;">
+                        <i class="fas fa-circle-notch fa-spin me-1"></i>Đang chờ thanh toán tự động
+                    </div>
+                    <div style="font-size:.84rem;color:#15803d;margin-bottom:.35rem;">
+                        Chuyển khoản nội dung: <strong style="font-family:monospace;background:#dcfce7;padding:2px 7px;border-radius:4px;">${ref}</strong>
+                        <button onclick="navigator.clipboard.writeText('${ref}').then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='Copy',1500)})" 
+                                style="background:#16a34a;color:#fff;border:none;border-radius:5px;padding:1px 7px;font-size:.72rem;cursor:pointer;margin-left:4px;">Copy</button>
+                    </div>
+                    <div style="font-size:.78rem;color:#166534;margin-bottom:.6rem;">
+                        <i class="fas fa-magic me-1"></i>Hệ thống <strong>tự động xác nhận</strong> khi nhận được tiền.
+                    </div>
+                    <div style="height:4px;background:#dcfce7;border-radius:4px;overflow:hidden;margin-bottom:.8rem;">
+                        <div id="pollingProgressBar" style="height:100%;background:#16a34a;width:0%;transition:width 5s linear;"></div>
+                    </div>
+                    <div style="display:flex;gap:.5rem;align-items:center;justify-content:space-between;font-size:.72rem;color:#15803d;margin-bottom:.8rem;">
+                        <span id="pollingAttemptText">Đang kiểm tra...</span>
+                        <span id="pollingCountdown">Còn 6:00</span>
+                    </div>
+                    <button id="btnManualCheckBooking" onclick="window._manualCheckBooking()" 
+                            style="width:100%;background:#fff;border:1.5px solid #16a34a;border-radius:9px;padding:.5rem;font-size:.83rem;font-weight:700;color:#16a34a;cursor:pointer;">
+                        <i class="fas fa-sync-alt me-1"></i> Kiểm tra ngay (nếu đã chuyển khoản)
+                    </button>
+                </div>`;
                 noteBox.style.display = 'block';
                 setTimeout(() => { const b = document.getElementById('pollingProgressBar'); if (b) b.style.width = '100%'; }, 100);
+
+                // Countdown timer
+                let _cRemaining = 360;
+                window._countdownTimer = setInterval(() => {
+                    _cRemaining--;
+                    const el = document.getElementById('pollingCountdown');
+                    if (el) { const m=Math.floor(_cRemaining/60),s=_cRemaining%60; el.textContent=`Còn ${m}:${String(s).padStart(2,'0')}`; }
+                    if (_cRemaining<=0) clearInterval(window._countdownTimer);
+                }, 1000);
             }
+
+            // Manual check function
+            window._manualCheckBooking = function() {
+                const bookingId = window._pendingBookingId;
+                if (!bookingId) return;
+                const btn = document.getElementById('btnManualCheckBooking');
+                if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Đang kiểm tra...'; btn.disabled = true; }
+                fetch(`api/check-payment-status.php?booking_id=${bookingId}`)
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.paid) {
+                            checkPaymentStatus(bookingId); // trigger success flow
+                        } else {
+                            if (btn) { btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Kiểm tra ngay'; btn.disabled = false; }
+                            const at = document.getElementById('pollingAttemptText');
+                            if (at) { at.textContent = '⚠️ Chưa nhận được tiền. Kiểm tra lại nội dung CK.'; setTimeout(()=>{ if(at) at.textContent='Đang kiểm tra...'; }, 3000); }
+                        }
+                    })
+                    .catch(() => { if (btn) { btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Kiểm tra ngay'; btn.disabled = false; } });
+            };
+
             startAutoPolling(data.booking_id, btn);
         })
         .catch(err => {
@@ -623,12 +677,23 @@ document.addEventListener('DOMContentLoaded', function() {
             attempts++;
             const bar = document.getElementById('pollingProgressBar');
             if (bar) { bar.style.transition = 'none'; bar.style.width = '0%'; setTimeout(() => { bar.style.transition = 'width 5s linear'; bar.style.width = '100%'; }, 50); }
+            const at = document.getElementById('pollingAttemptText');
+            if (at) at.textContent = `Lần kiểm tra ${attempts}/${maxAttempts}`;
             checkPaymentStatus(bookingId);
             if (attempts >= maxAttempts) {
                 clearInterval(_pollingTimer); _pollingTimer = null;
-                if (btn) { btn.innerHTML = '<i class="fas fa-redo me-2"></i>Thu lai'; btn.disabled = false; window._pendingBookingId = null; }
+                if (window._countdownTimer) clearInterval(window._countdownTimer);
+                if (btn) { btn.innerHTML = '<i class="fas fa-redo me-2"></i>Thử lại'; btn.disabled = false; window._pendingBookingId = null; }
                 const nb = document.getElementById('transferWaitingNote');
-                if (nb) nb.innerHTML = `<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;padding:1rem;color:#9a3412;font-size:.85rem;"><i class="fas fa-exclamation-triangle me-1"></i> Het thoi gian cho. Lien he ho tro voi ma don <strong>${window._pendingTransferRef}</strong>.</div>`;
+                if (nb) nb.innerHTML = `<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;padding:1rem;color:#9a3412;font-size:.85rem;">
+                    <i class="fas fa-exclamation-triangle me-1"></i> Hết thời gian chờ tự động.<br>
+                    Nếu đã chuyển khoản, nhấn <strong>"Kiểm tra ngay"</strong> hoặc liên hệ hỗ trợ với mã: <strong>${window._pendingTransferRef}</strong>.
+                    <br><br>
+                    <button onclick="window._manualCheckBooking && window._manualCheckBooking()" id="btnManualCheckBooking"
+                            style="background:#d97706;color:#fff;border:none;border-radius:8px;padding:.5rem 1rem;font-size:.83rem;font-weight:700;cursor:pointer;width:100%;">
+                        <i class="fas fa-sync-alt me-1"></i> Kiểm tra thanh toán ngay
+                    </button>
+                </div>`;
             }
         }, 5000);
     }

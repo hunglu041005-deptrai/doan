@@ -14,3 +14,34 @@
 [2026-07-15 02:12:44] AUTH FAIL. Header: 
 [2026-07-15 02:16:25] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-15 07:16:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"DATSAN00029 P2LML5ZY\/865845","transferType":"in","description":"BankAPINotify DATSAN00029 P2LML5ZY\/865845","transferAmount":80000,"referenceCode":"FT26196304426890","accumulated":0,"id":68268985}
 [2026-07-15 02:16:25] AUTH FAIL. Header: 
+[2026-07-24 05:13:05] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-24 09:55:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"DATSAN00044 P2L3FD6D\/294561","transferType":"in","description":"BankAPINotify DATSAN00044 P2L3FD6D\/294561","transferAmount":49000,"referenceCode":"FT26205934500998","accumulated":0,"id":69706504}
+[2026-07-24 05:13:05] AUTH SKIPPED (no API key configured)
+[2026-07-24 05:13:05] Type=in | Amount=49000 | Desc=DATSAN00044 P2L3FD6D/294561 | TxID=69706504
+[2026-07-24 05:13:05] Parsed: type=booking id=44 amount=49000
+[2026-07-24 05:14:03] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-24 10:13:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"DATSAN00046 P2L3T2IN\/302239","transferType":"in","description":"BankAPINotify DATSAN00046 P2L3T2IN\/302239","transferAmount":80000,"referenceCode":"FT26205214355460","accumulated":0,"id":69709242}
+[2026-07-24 05:14:03] AUTH SKIPPED (no API key configured)
+[2026-07-24 05:14:03] Type=in | Amount=80000 | Desc=DATSAN00046 P2L3T2IN/302239 | TxID=69709242
+[2026-07-24 05:14:03] Parsed: type=booking id=46 amount=80000
+[2026-07-24 05:17:56] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-24 10:17:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"MBCT LU DANG HUNG chuyen tien D2VQ5DLT\/471119","transferType":"out","description":"BankAPINotify MBCT LU DANG HUNG chuyen tien D2VQ5DLT\/471119","transferAmount":398000,"referenceCode":"FT26205400877505","accumulated":0,"id":69709828}
+[2026-07-24 05:17:56] AUTH SKIPPED (no API key configured)
+[2026-07-24 05:17:56] Type=out | Amount=398000 | Desc=MBCT LU DANG HUNG CHUYEN TIEN D2VQ5DLT/471119 | TxID=69709828
+[2026-07-24 05:17:56] SKIP: outgoing transaction
+[2026-07-24 05:34:07] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-24 09:55:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"DATSAN00044 P2L3FD6D\/294561","transferType":"in","description":"BankAPINotify DATSAN00044 P2L3FD6D\/294561","transferAmount":49000,"referenceCode":"FT26205934500998","accumulated":0,"id":69706504}
+[2026-07-24 05:34:07] AUTH SKIPPED (no API key configured)
+[2026-07-24 05:34:07] Type=in | Amount=49000 | Desc=DATSAN00044 P2L3FD6D/294561 | TxID=69706504
+[2026-07-24 05:34:07] Parsed: type=booking id=44 amount=49000
+[2026-07-24 05:34:07] INFO: already paid
+[2026-07-24 05:34:12] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-24 09:55:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"DATSAN00044 P2L3FD6D\/294561","transferType":"in","description":"BankAPINotify DATSAN00044 P2L3FD6D\/294561","transferAmount":49000,"referenceCode":"FT26205934500998","accumulated":0,"id":69706504}
+[2026-07-24 05:34:12] AUTH SKIPPED (no API key configured)
+[2026-07-24 05:34:12] Type=in | Amount=49000 | Desc=DATSAN00044 P2L3FD6D/294561 | TxID=69706504
+[2026-07-24 05:34:12] Parsed: type=booking id=44 amount=49000
+[2026-07-24 05:34:12] INFO: already paid
+[2026-07-24 05:34:15] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-24 09:55:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"DATSAN00044 P2L3FD6D\/294561","transferType":"in","description":"BankAPINotify DATSAN00044 P2L3FD6D\/294561","transferAmount":49000,"referenceCode":"FT26205934500998","accumulated":0,"id":69706504}
+[2026-07-24 05:34:15] AUTH SKIPPED (no API key configured)
+[2026-07-24 05:34:15] Type=in | Amount=49000 | Desc=DATSAN00044 P2L3FD6D/294561 | TxID=69706504
+[2026-07-24 05:34:15] Parsed: type=booking id=44 amount=49000
+[2026-07-24 05:34:15] INFO: already paid
+[2026-07-24 06:16:03] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-24 11:16:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"DATSAN00047","transferType":"in","description":"BankAPINotify DATSAN00047","transferAmount":2000,"referenceCode":"FT26205637009381","accumulated":0,"id":69718356}
+[2026-07-24 06:16:03] AUTH SKIPPED (no API key configured)
+[2026-07-24 06:16:03] Type=in | Amount=2000 | Desc=DATSAN00047 | TxID=69718356
+[2026-07-24 06:16:03] Parsed: type=booking id=47 amount=2000
