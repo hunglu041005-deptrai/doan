@@ -362,23 +362,24 @@ require_once __DIR__ . '/../includes/header.php';
                                             <strong class="text-danger"><?php echo number_format($order['total_amount']); ?>đ</strong>
                                         </td>
                                         <td>
-                                            <span class="badge bg-<?php 
-                                                echo $order['status'] === 'pending' ? 'warning' : 
-                                                    ($order['status'] === 'confirmed' ? 'info' : 
-                                                    ($order['status'] === 'shipping' ? 'primary' : 
-                                                    ($order['status'] === 'delivered' ? 'success' : 'secondary')));
-                                            ?>">
-                                                <?php 
-                                                $status_text = [
-                                                    'pending' => 'Đang xử lý',
-                                                    'confirmed' => 'Đã xác nhận',
-                                                    'shipping' => 'Đang giao',
-                                                    'delivered' => 'Đã giao',
-                                                    'cancelled' => 'Đã hủy'
-                                                ];
-                                                echo $status_text[$order['status']] ?? $order['status'];
-                                                ?>
-                                            </span>
+                                            <?php
+                                            $s  = $order['status'] ?? 'pending';
+                                            $ps = $order['payment_status'] ?? 'unpaid';
+                                            if ($s === 'delivered') {
+                                                $bc = 'success'; $bt = 'Đã giao';
+                                            } elseif ($s === 'shipping') {
+                                                $bc = 'primary'; $bt = 'Đang giao';
+                                            } elseif ($s === 'confirmed' || $ps === 'paid') {
+                                                $bc = 'success'; $bt = 'Đã đặt ✓';
+                                            } elseif ($s === 'cancelled') {
+                                                $bc = 'danger'; $bt = 'Đã hủy';
+                                            } elseif ($ps === 'pending') {
+                                                $bc = 'warning text-dark'; $bt = 'Chờ TT';
+                                            } else {
+                                                $bc = 'secondary'; $bt = 'Đang xử lý';
+                                            }
+                                            ?>
+                                            <span class="badge bg-<?php echo $bc; ?>"><?php echo $bt; ?></span>
                                         </td>
                                         <td>
                                             <small><?php echo date('d/m/Y H:i', strtotime($order['created_at'])); ?></small>

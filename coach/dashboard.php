@@ -447,7 +447,10 @@ $active_stmt->close();
                                 <i class="fas fa-user text-white"></i>
                             </div>
                             <div>
-                                <div class="fw-bold"><?php echo escape($s['student_name']); ?></div>
+                                <div class="fw-bold" style="cursor:pointer;color:#6366f1;text-decoration:underline dotted;"
+                                     onclick="showStudentDetail(<?php echo htmlspecialchars(json_encode($s), ENT_QUOTES); ?>)">
+                                    <?php echo escape($s['student_name']); ?>
+                                </div>
                                 <small class="text-muted"><?php echo escape($s['phone']); ?></small>
                             </div>
                         </div>
@@ -914,6 +917,28 @@ function switchTab(tabName, btn) {
     btn.classList.add('active');
 }
 
+// Hiển thị chi tiết học viên
+function showStudentDetail(s) {
+    const dayNames = {Mon:'Thứ 2',Tue:'Thứ 3',Wed:'Thứ 4',Thu:'Thứ 5',Fri:'Thứ 6',Sat:'Thứ 7',Sun:'Chủ nhật'};
+    const courseNames = {beginner:'Cơ bản',intermediate:'Trung cấp',advanced:'Nâng cao'};
+    const statusMap = {active:'✅ Đang học',pending_payment:'⏳ Chờ thanh toán',cancelled:'❌ Đã huỷ'};
+    const days = (s.schedule_days || '').split(',').map(d => dayNames[d.trim()] || d.trim()).join(', ');
+
+    document.getElementById('sdName').textContent    = s.student_name || '—';
+    document.getElementById('sdPhone').textContent   = s.phone || '—';
+    document.getElementById('sdEmail').textContent   = s.email || '—';
+    document.getElementById('sdCode').textContent    = s.student_code || '—';
+    document.getElementById('sdCourse').textContent  = courseNames[s.course] || s.course || '—';
+    document.getElementById('sdTime').textContent    = s.schedule_time || '—';
+    document.getElementById('sdDays').textContent    = days || '—';
+    document.getElementById('sdWeek').textContent    = s.week_start || '—';
+    document.getElementById('sdStatus').textContent  = statusMap[s.status] || s.status || '—';
+    document.getElementById('sdNote').textContent    = s.notes || s.note || '(Không có)';
+    document.getElementById('sdReg').textContent     = s.registered_at_fmt || s.reg_date || '—';
+
+    new bootstrap.Modal(document.getElementById('studentDetailModal')).show();
+}
+
 // Hiển thị QR modal
 function showStudentQR(code, name, qrData) {
     document.getElementById('qrModalTitle').textContent = name;
@@ -1132,3 +1157,68 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
+<!-- Modal chi tiết học viên -->
+<div class="modal fade" id="studentDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:18px;overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#302b63,#24243e);padding:1.2rem 1.5rem;color:#fff;display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                    <h6 class="fw-bold mb-0"><i class="fas fa-user-graduate me-2"></i>Thông tin học viên</h6>
+                    <small style="opacity:.6;">Chi tiết đăng ký khóa học</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.9rem;">
+                    <div style="grid-column:1/-1;background:#f8fafc;border-radius:10px;padding:.8rem 1rem;">
+                        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;font-weight:700;">Họ tên</div>
+                        <div id="sdName" style="font-weight:800;font-size:1.05rem;color:#111;"></div>
+                    </div>
+                    <div style="background:#f8fafc;border-radius:10px;padding:.7rem .9rem;">
+                        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;font-weight:700;">Điện thoại</div>
+                        <div id="sdPhone" style="font-weight:700;color:#6366f1;font-family:monospace;"></div>
+                    </div>
+                    <div style="background:#f8fafc;border-radius:10px;padding:.7rem .9rem;">
+                        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;font-weight:700;">Email</div>
+                        <div id="sdEmail" style="font-weight:600;font-size:.85rem;"></div>
+                    </div>
+                    <div style="background:#f8fafc;border-radius:10px;padding:.7rem .9rem;">
+                        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;font-weight:700;">Mã học viên</div>
+                        <div id="sdCode" style="font-weight:700;font-family:monospace;color:#6366f1;font-size:.88rem;"></div>
+                    </div>
+                    <div style="background:#f8fafc;border-radius:10px;padding:.7rem .9rem;">
+                        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;font-weight:700;">Trạng thái</div>
+                        <div id="sdStatus" style="font-weight:700;font-size:.88rem;"></div>
+                    </div>
+                    <div style="background:#f8fafc;border-radius:10px;padding:.7rem .9rem;">
+                        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;font-weight:700;">Khóa học</div>
+                        <div id="sdCourse" style="font-weight:700;color:#10b981;"></div>
+                    </div>
+                    <div style="background:#f8fafc;border-radius:10px;padding:.7rem .9rem;">
+                        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;font-weight:700;">Giờ học</div>
+                        <div id="sdTime" style="font-weight:600;font-size:.88rem;"></div>
+                    </div>
+                    <div style="grid-column:1/-1;background:#f8fafc;border-radius:10px;padding:.7rem .9rem;">
+                        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;font-weight:700;">Ngày học trong tuần</div>
+                        <div id="sdDays" style="font-weight:600;font-size:.88rem;"></div>
+                    </div>
+                    <div style="background:#f8fafc;border-radius:10px;padding:.7rem .9rem;">
+                        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;font-weight:700;">Tuần bắt đầu</div>
+                        <div id="sdWeek" style="font-weight:600;font-size:.85rem;"></div>
+                    </div>
+                    <div style="background:#f8fafc;border-radius:10px;padding:.7rem .9rem;">
+                        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;font-weight:700;">Ngày đăng ký</div>
+                        <div id="sdReg" style="font-weight:600;font-size:.85rem;"></div>
+                    </div>
+                    <div style="grid-column:1/-1;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:.7rem .9rem;">
+                        <div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;font-weight:700;">Ghi chú</div>
+                        <div id="sdNote" style="font-weight:600;font-size:.85rem;color:#92400e;"></div>
+                    </div>
+                </div>
+            </div>
+            <div style="padding:.8rem 1.5rem;border-top:1px solid #f3f4f6;text-align:right;">
+                <button class="btn btn-sm fw-bold" style="background:#f3f4f6;color:#374151;border:none;border-radius:8px;padding:.4rem 1.2rem;" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>

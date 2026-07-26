@@ -45,3 +45,8 @@
 [2026-07-24 06:16:03] AUTH SKIPPED (no API key configured)
 [2026-07-24 06:16:03] Type=in | Amount=2000 | Desc=DATSAN00047 | TxID=69718356
 [2026-07-24 06:16:03] Parsed: type=booking id=47 amount=2000
+[2026-07-26 03:34:35] INCOMING: {"gateway":"MBBank","transactionDate":"2026-07-26 08:34:00","accountNumber":"7369786789","subAccount":null,"code":null,"content":"ORD26072683132 P2LNMNJ4\/220363","transferType":"in","description":"BankAPINotify ORD26072683132 P2LNMNJ4\/220363","transferAmount":32000,"referenceCode":"FT26208768902965","accumulated":0,"id":70024730}
+[2026-07-26 03:34:35] AUTH SKIPPED (no API key configured)
+[2026-07-26 03:34:35] Type=in | Amount=32000 | Desc=ORD26072683132 P2LNMNJ4/220363 | TxID=70024730
+[2026-07-26 03:34:35] Parsed: type=order id=ORD26072683132 amount=32000
+[2026-07-26 03:34:35] SUCCESS: Order ORD26072683132 paid & confirmed

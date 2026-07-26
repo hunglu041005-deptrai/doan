@@ -134,23 +134,24 @@ require_once __DIR__ . '/includes/header.php';
                                 <div class="card-body">
                                     <div class="mb-3">
                                         <strong>Trạng thái:</strong>
-                                        <span class="badge bg-<?php 
-                                            echo $order_detail['status'] === 'pending' ? 'warning' : 
-                                                ($order_detail['status'] === 'confirmed' ? 'info' : 
-                                                ($order_detail['status'] === 'shipping' ? 'primary' : 
-                                                ($order_detail['status'] === 'delivered' ? 'success' : 'secondary')));
-                                        ?> ms-2">
-                                            <?php 
-                                            $status_text = [
-                                                'pending' => 'Đang xử lý',
-                                                'confirmed' => 'Đã xác nhận',
-                                                'shipping' => 'Đang giao',
-                                                'delivered' => 'Đã giao',
-                                                'cancelled' => 'Đã hủy'
-                                            ];
-                                            echo $status_text[$order_detail['status']] ?? $order_detail['status'];
-                                            ?>
-                                        </span>
+                                        <?php
+                                        $s  = $order_detail['status'] ?? 'pending';
+                                        $ps = $order_detail['payment_status'] ?? 'unpaid';
+                                        if ($s === 'delivered') {
+                                            $bc = 'success'; $bt = 'Đã giao';
+                                        } elseif ($s === 'shipping') {
+                                            $bc = 'primary'; $bt = 'Đang giao';
+                                        } elseif ($s === 'confirmed' || $ps === 'paid') {
+                                            $bc = 'success'; $bt = 'Đã đặt ✓';
+                                        } elseif ($s === 'cancelled') {
+                                            $bc = 'danger'; $bt = 'Đã hủy';
+                                        } elseif ($ps === 'pending') {
+                                            $bc = 'warning text-dark'; $bt = 'Chờ thanh toán';
+                                        } else {
+                                            $bc = 'secondary'; $bt = 'Đang xử lý';
+                                        }
+                                        ?>
+                                        <span class="badge bg-<?php echo $bc; ?> ms-2"><?php echo $bt; ?></span>
                                     </div>
                                     
                                     <div class="mb-3">
@@ -160,7 +161,15 @@ require_once __DIR__ . '/includes/header.php';
                                     
                                     <div class="mb-3">
                                         <strong>Thanh toán:</strong><br>
-                                        <span class="text-muted">Thanh toán khi nhận hàng (COD)</span>
+                                        <?php
+                                        $pm = $order_detail['payment_method'] ?? 'cod';
+                                        $pmLabels = ['cod'=>'Tiền mặt (COD)','bank'=>'Chuyển khoản MB Bank','vnpay'=>'Chuyển khoản MB Bank','momo'=>'Ví MoMo'];
+                                        $pmText = $pmLabels[$pm] ?? 'Tiền mặt (COD)';
+                                        $psClass = ($ps === 'paid') ? 'text-success fw-bold' : 'text-warning fw-bold';
+                                        $psText  = ($ps === 'paid') ? '✓ Đã thanh toán' : 'Chờ thanh toán';
+                                        ?>
+                                        <span class="text-muted"><?php echo $pmText; ?></span><br>
+                                        <span class="<?php echo $psClass; ?>" style="font-size:.82rem;"><?php echo $psText; ?></span>
                                     </div>
                                     
                                     <hr>
@@ -231,23 +240,24 @@ require_once __DIR__ . '/includes/header.php';
                                                     <small class="text-muted"><?php echo date('d/m/Y H:i', strtotime($order['created_at'])); ?></small>
                                                 </div>
                                                 <div class="col-md-2">
-                                                    <span class="badge bg-<?php 
-                                                        echo $order['status'] === 'pending' ? 'warning' : 
-                                                            ($order['status'] === 'confirmed' ? 'info' : 
-                                                            ($order['status'] === 'shipping' ? 'primary' : 
-                                                            ($order['status'] === 'delivered' ? 'success' : 'secondary')));
-                                                    ?>">
-                                                        <?php 
-                                                        $status_text = [
-                                                            'pending' => 'Đang xử lý',
-                                                            'confirmed' => 'Đã xác nhận',
-                                                            'shipping' => 'Đang giao',
-                                                            'delivered' => 'Đã giao',
-                                                            'cancelled' => 'Đã hủy'
-                                                        ];
-                                                        echo $status_text[$order['status']] ?? $order['status'];
-                                                        ?>
-                                                    </span>
+                                                    <?php
+                                                    $s  = $order['status'] ?? 'pending';
+                                                    $ps = $order['payment_status'] ?? 'unpaid';
+                                                    if ($s === 'delivered') {
+                                                        $bc = 'success'; $bt = 'Đã giao';
+                                                    } elseif ($s === 'shipping') {
+                                                        $bc = 'primary'; $bt = 'Đang giao';
+                                                    } elseif ($s === 'confirmed' || $ps === 'paid') {
+                                                        $bc = 'success'; $bt = 'Đã đặt ✓';
+                                                    } elseif ($s === 'cancelled') {
+                                                        $bc = 'danger'; $bt = 'Đã hủy';
+                                                    } elseif ($ps === 'pending') {
+                                                        $bc = 'warning text-dark'; $bt = 'Chờ TT';
+                                                    } else {
+                                                        $bc = 'secondary'; $bt = 'Đang xử lý';
+                                                    }
+                                                    ?>
+                                                    <span class="badge bg-<?php echo $bc; ?>"><?php echo $bt; ?></span>
                                                 </div>
                                                 <div class="col-md-2">
                                                     <small class="text-muted"><?php echo $order['item_count']; ?> sản phẩm</small>

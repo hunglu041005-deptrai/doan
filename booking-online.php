@@ -906,6 +906,56 @@ function sendBookingChat() {
 
 <style>
 @keyframes bkFadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── Duration selector ── */
+.duration-selector { background:#fff; border:1.5px solid #e5e7eb; border-radius:14px; padding:1rem 1.2rem; margin-top:1rem; }
+.duration-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+.duration-option {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s ease;
+}
+.duration-option:hover {
+    border-color: #6366f1;
+    background: #eef2ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99,102,241,.15);
+}
+.duration-option.selected {
+    border-color: #6366f1;
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    box-shadow: 0 4px 14px rgba(99,102,241,.2);
+}
+.duration-time {
+    font-weight: 800;
+    font-size: .95rem;
+    color: #1e293b;
+    margin-bottom: 3px;
+}
+.duration-price {
+    font-size: .82rem;
+    font-weight: 700;
+    color: #6366f1;
+}
+.duration-save {
+    font-size: .72rem;
+    color: #10b981;
+    font-weight: 700;
+    margin-top: 2px;
+    background: #d1fae5;
+    border-radius: 6px;
+    padding: 1px 6px;
+    display: inline-block;
+}
 </style>
 
 <script src="assets/js/booking-online.js"></script>
