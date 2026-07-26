@@ -236,7 +236,7 @@ switch ($orderType) {
 
     case 'membership':
         $like = '%' . $orderId . '%';
-        $st = $mysqli->prepare('SELECT id, payment_status FROM memberships WHERE member_code LIKE ? LIMIT 1');
+        $st = $mysqli->prepare('SELECT id, user_id, payment_status, months, plan_id FROM memberships WHERE member_code LIKE ? LIMIT 1');
         $st->bind_param('s', $like);
         $st->execute();
         $mem = $st->get_result()->fetch_assoc();
@@ -249,6 +249,38 @@ switch ($orderType) {
         $up->bind_param('i', $mem['id']);
         $updated = $up->execute();
         $up->close();
+
+        // Tạo bookings định kỳ sau khi webhook confirm
+        if ($updated) {
+            try {
+                require_once __DIR__ . '/../includes/functions.php';
+                // Lấy thông tin plan để biết time_range + court_id
+                $planChk = $mysqli->query("SHOW TABLES LIKE 'membership_plans'");
+                if ($planChk && $planChk->num_rows > 0) {
+                    $planSt = $mysqli->prepare('SELECT mp.time_range, mp.court_id FROM memberships m LEFT JOIN membership_plans mp ON mp.id = m.plan_id WHERE m.id = ? LIMIT 1');
+                    $planSt->bind_param('i', $mem['id']);
+                    $planSt->execute();
+                    $planRow = $planSt->get_result()->fetch_assoc();
+                    $planSt->close();
+
+                    if ($planRow && $planRow['time_range'] && $planRow['court_id']) {
+                        // Lấy start_date/end_date mới vừa update
+                        $dtSt = $mysqli->prepare('SELECT start_date, end_date FROM memberships WHERE id=?');
+                        $dtSt->bind_param('i', $mem['id']); $dtSt->execute();
+                        $dtRow = $dtSt->get_result()->fetch_assoc(); $dtSt->close();
+                        if ($dtRow) {
+                            createMembershipBookings(
+                                $mem['id'], $mem['user_id'],
+                                (int)$planRow['court_id'],
+                                $planRow['time_range'],
+                                $dtRow['start_date'], $dtRow['end_date'],
+                                'bank_transfer'
+                            );
+                        }
+                    }
+                }
+            } catch (Exception $e) { wLog("Booking creation error: " . $e->getMessage()); }
+        }
 
         // Gửi thông báo kích hoạt hội viên
         if ($updated) {
@@ -273,11 +305,12 @@ switch ($orderType) {
 // ── Lưu lịch sử giao dịch ────────────────────────────────────────────────
 $status   = $updated ? 'processed' : 'failed';
 $rawStore = substr($rawBody, 0, 2000);
+$orderIdStr = (string)$orderId;
 $sv = $mysqli->prepare(
     'INSERT IGNORE INTO payment_transactions (transaction_id,gateway,amount,description,order_type,order_id,status,raw_data) VALUES (?,?,?,?,?,?,?,?)'
 );
 $sv->bind_param('ssisssss', $transactionId, $gateway, $transferAmount, $description,
-    $orderType, (string)$orderId, $status, $rawStore);
+    $orderType, $orderIdStr, $status, $rawStore);
 $sv->execute();
 $sv->close();
 

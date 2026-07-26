@@ -176,7 +176,7 @@ require_once __DIR__ . '/../includes/header.php';
                             </a>
                         </div>
                         <div class="col-lg-2 col-md-4 col-6">
-                            <a href="memberships.php?tab=plans" class="btn btn-outline-success w-100 py-3 hover-lift" style="border-color:#6366f1;color:#6366f1;">
+                            <a href="membership-plans.php" class="btn btn-outline-success w-100 py-3 hover-lift" style="border-color:#6366f1;color:#6366f1;">
                                 <i class="fas fa-tags fa-2x mb-2 d-block"></i>
                                 <small class="fw-bold">Gói hội viên</small>
                             </a>

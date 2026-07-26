@@ -28,26 +28,25 @@ function getCourts($filters = []) {
 
     if (!empty($filters['q'])) {
         $sql .= ' AND (c.name LIKE ? OR c.description LIKE ? OR c.location LIKE ?)';
-        $value = '%' . $filters['q'] . '%';
-        $params[] = &$value;
-        $params[] = &$value;
-        $params[] = &$value;
+        $qVal = '%' . $filters['q'] . '%';
+        $params[] = $qVal;
+        $params[] = $qVal;
+        $params[] = $qVal;
         $types .= 'sss';
     }
     if (!empty($filters['location'])) {
         $sql .= ' AND c.location LIKE ?';
-        $value = '%' . $filters['location'] . '%';
-        $params[] = &$value;
+        $params[] = '%' . $filters['location'] . '%';
         $types .= 's';
     }
     if (!empty($filters['min_price']) && is_numeric($filters['min_price'])) {
         $sql .= ' AND c.price_per_hour >= ?';
-        $params[] = &$filters['min_price'];
+        $params[] = (int)$filters['min_price'];
         $types .= 'i';
     }
     if (!empty($filters['max_price']) && is_numeric($filters['max_price'])) {
         $sql .= ' AND c.price_per_hour <= ?';
-        $params[] = &$filters['max_price'];
+        $params[] = (int)$filters['max_price'];
         $types .= 'i';
     }
     if (empty($filters['min_price']) && empty($filters['max_price']) && !empty($filters['price'])) {
@@ -62,9 +61,8 @@ function getCourts($filters = []) {
 
     // Lọc theo danh mục (DB-level)
     if (!empty($filters['category'])) {
-        $catVal = '%' . $filters['category'] . '%';
         $sql .= ' AND c.category LIKE ?';
-        $params[] = &$catVal;
+        $params[] = '%' . $filters['category'] . '%';
         $types .= 's';
     }
 
@@ -644,4 +642,101 @@ function getMembershipTicketLogs($membership_id, $limit = 20) {
     $logs = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
     return $logs;
+}
+
+/**
+ * Tạo bookings định kỳ từ gói hội viên có time_range + court_id
+ *
+ * @param int    $membership_id
+ * @param int    $user_id
+ * @param int    $court_id
+ * @param string $time_range   VD: "14H-17H" hoặc "14H–17H"
+ * @param string $start_date   "2026-07-26"
+ * @param string $end_date     "2026-10-26"
+ * @param string $payment_method
+ * @return array ['created'=>int, 'skipped'=>int]
+ */
+function createMembershipBookings($membership_id, $user_id, $court_id, $time_range, $start_date, $end_date, $payment_method = 'cash') {
+    global $mysqli;
+
+    if (!$court_id || !$time_range || !$start_date || !$end_date) return ['created'=>0,'skipped'=>0];
+
+    // Parse time_range: "14H-17H", "14H–17H", "20H–22H" (hỗ trợ mọi dấu phân cách)
+    if (preg_match('/(\d{1,2})\s*[Hh]\s*[^\d]\s*(\d{1,2})\s*[Hh]/u', $time_range, $m)) {
+        $start_hour = (int)$m[1];
+        $end_hour   = (int)$m[2];
+    } elseif (preg_match('/(\d{1,2}):(\d{2})\s*[\-–—]\s*(\d{1,2}):(\d{2})/u', $time_range, $m)) {
+        $start_hour = (int)$m[1];
+        $end_hour   = (int)$m[3];
+    } else {
+        return ['created'=>0,'skipped'=>0,'error'=>'Cannot parse time_range: '.$time_range];
+    }
+
+    if ($start_hour >= $end_hour || $start_hour < 0 || $end_hour > 24) {
+        return ['created'=>0,'skipped'=>0,'error'=>'Invalid time range'];
+    }
+
+    // Đảm bảo các cột cần thiết tồn tại
+    $chkBT = $mysqli->query("SHOW COLUMNS FROM bookings LIKE 'booking_type'");
+    if ($chkBT && $chkBT->num_rows === 0) {
+        $mysqli->query("ALTER TABLE bookings ADD COLUMN booking_type VARCHAR(20) DEFAULT 'single'");
+    }
+    $chkMID = $mysqli->query("SHOW COLUMNS FROM bookings LIKE 'membership_id'");
+    if ($chkMID && $chkMID->num_rows === 0) {
+        $mysqli->query("ALTER TABLE bookings ADD COLUMN membership_id INT DEFAULT NULL");
+    }
+    $chkDa = $mysqli->query("SHOW COLUMNS FROM bookings LIKE 'discount_amount'");
+    if ($chkDa && $chkDa->num_rows === 0) {
+        $mysqli->query("ALTER TABLE bookings ADD COLUMN discount_amount INT NOT NULL DEFAULT 0");
+        $mysqli->query("ALTER TABLE bookings ADD COLUMN promo_applied VARCHAR(150) DEFAULT NULL");
+    }
+
+    $payment_status = ($payment_method === 'cash') ? 'unpaid' : 'pending';
+    $created = 0;
+    $skipped = 0;
+
+    $dtCurrent = new DateTime($start_date);
+    $dtEnd     = new DateTime($end_date);
+
+    $start_time_str = sprintf('%02d:00:00', $start_hour);
+    $end_time_str   = sprintf('%02d:00:00', $end_hour);
+
+    // Giá mỗi buổi = giá hội viên × số giờ
+    $hours = $end_hour - $start_hour;
+    $price_per_session = getMemberPrice() * $hours;
+
+    $stmt = $mysqli->prepare(
+        'INSERT INTO bookings
+         (user_id, court_id, booking_date, start_time, end_time, total_price,
+          payment_method, payment_status, status, notes, booking_type, membership_id, discount_amount, promo_applied)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, "confirmed", ?, "membership", ?, 0, "")'
+    );
+
+    while ($dtCurrent <= $dtEnd) {
+        $dateStr = $dtCurrent->format('Y-m-d');
+
+        if (isSlotAvailable($court_id, $dateStr, $start_time_str, $end_time_str)) {
+            $notes = 'Gói hội viên #' . $membership_id;
+            // i  i          s        s                s              i                    s               s               s      i
+            // uid court_id  date     start_time        end_time      price                pay_method      pay_status      notes  membership_id
+            $stmt->bind_param(
+                'iisssisssi',
+                $user_id, $court_id, $dateStr,
+                $start_time_str, $end_time_str,
+                $price_per_session,
+                $payment_method, $payment_status,
+                $notes, $membership_id
+            );
+            if ($stmt->execute()) {
+                $created++;
+            }
+        } else {
+            $skipped++;
+        }
+
+        $dtCurrent->modify('+1 day');
+    }
+
+    $stmt->close();
+    return ['created' => $created, 'skipped' => $skipped];
 }

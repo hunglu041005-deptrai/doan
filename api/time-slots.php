@@ -25,11 +25,12 @@ try {
         throw new Exception('Invalid date format');
     }
     
-    // Check if date is not in the past
-    $today = new DateTime();
-    $today->setTime(0, 0, 0);
-    if ($dateObj < $today) {
-        throw new Exception('Cannot book for past dates');
+    // Check if date is not in the past (chỉ check ngày, không block ngày hôm nay)
+    $yesterday = new DateTime();
+    $yesterday->setTime(0, 0, 0);
+    $yesterday->modify('-1 day');
+    if ($dateObj < $yesterday) {
+        throw new Exception('Không thể đặt sân cho ngày đã qua.');
     }
     
     // Get court information

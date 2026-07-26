@@ -113,9 +113,11 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error loading time slots:', error);
-                // Fallback to demo data
-                generateTimeSlots();
-                showAlert('Không thể tải dữ liệu thời gian thực. Đang hiển thị dữ liệu demo.', 'warning');
+                timeSlotsGrid.innerHTML = `
+                    <div class="col-12 text-center py-4">
+                        <i class="fas fa-exclamation-circle fa-2x text-warning mb-2 d-block"></i>
+                        <p class="text-muted">Không thể tải khung giờ. Vui lòng nhấn <strong>Tải lại</strong>.</p>
+                    </div>`;
             });
     }
 
@@ -923,8 +925,363 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Enhanced booking system initialized');
 });
 
+// ============================================================
+// RECURRING BOOKING — Đặt sân định kỳ
+// ============================================================
+
+// State: các ngày trong tuần đã chọn
+window._recurringDays = [];
+window._recurringPreviewData = null;
+
+// Toggle recurring panel
+document.addEventListener('DOMContentLoaded', function() {
+    const toggle = document.getElementById('recurringToggle');
+    if (toggle) {
+        toggle.addEventListener('change', function() {
+            const opts = document.getElementById('recurringOptions');
+            if (opts) opts.style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                // Reset khi tắt
+                window._recurringDays = [];
+                window._recurringPreviewData = null;
+                document.querySelectorAll('.dow-badge').forEach(b => {
+                    b.style.background = '#fff';
+                    b.style.color = '#6b7280';
+                    b.style.borderColor = '#e2e8f0';
+                });
+                const pr = document.getElementById('recurringPreviewResult');
+                if (pr) pr.style.display = 'none';
+            }
+        });
+    }
+});
+
+// Toggle ngày trong tuần
+function toggleDow(val) {
+    const idx = window._recurringDays.indexOf(val);
+    const badge = document.querySelector(`.dow-badge[data-val="${val}"]`);
+    if (idx === -1) {
+        window._recurringDays.push(val);
+        if (badge) {
+            badge.style.background = '#3b82f6';
+            badge.style.color = '#fff';
+            badge.style.borderColor = '#3b82f6';
+        }
+    } else {
+        window._recurringDays.splice(idx, 1);
+        if (badge) {
+            badge.style.background = '#fff';
+            badge.style.color = '#6b7280';
+            badge.style.borderColor = '#e2e8f0';
+        }
+    }
+}
+
+// Xem trước lịch đặt định kỳ
+function previewRecurring() {
+    const btn      = document.getElementById('btnRecurringPreview');
+    const result   = document.getElementById('recurringPreviewResult');
+    const endDate  = document.getElementById('recurringEndDate')?.value;
+
+    // Lấy bookingState từ scope cha (DOMContentLoaded)
+    const court    = window._bookingState?.selectedCourt;
+    const date     = window._bookingState?.selectedDate;
+    const time     = window._bookingState?.selectedTime;
+    const duration = window._bookingState?.selectedDuration || 1;
+
+    if (!court || !date || !time) {
+        alert('Vui lòng chọn sân và khung giờ trước.');
+        return;
+    }
+    if (window._recurringDays.length === 0) {
+        alert('Vui lòng chọn ít nhất 1 ngày trong tuần.');
+        return;
+    }
+    if (!endDate) {
+        alert('Vui lòng chọn ngày kết thúc.');
+        return;
+    }
+    if (endDate <= date) {
+        alert('Ngày kết thúc phải sau ngày bắt đầu.');
+        return;
+    }
+
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Đang tính...'; btn.disabled = true; }
+
+    const fd = new FormData();
+    fd.append('court_id',       court.id);
+    fd.append('start_time',     time);
+    fd.append('duration',       duration);
+    fd.append('start_date',     date);
+    fd.append('end_date',       endDate);
+    fd.append('payment_method', 'cash');
+    fd.append('preview',        '1');
+    window._recurringDays.forEach(d => fd.append('days_of_week[]', d));
+
+    fetch('api/recurring-booking.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (btn) { btn.innerHTML = '<i class="fas fa-eye me-1"></i> Xem trước lịch đặt'; btn.disabled = false; }
+            if (!data.success) { alert('Lỗi: ' + data.error); return; }
+
+            window._recurringPreviewData = data;
+            renderRecurringPreview(data);
+        })
+        .catch(err => {
+            if (btn) { btn.innerHTML = '<i class="fas fa-eye me-1"></i> Xem trước lịch đặt'; btn.disabled = false; }
+            alert('Lỗi kết nối: ' + err.message);
+        });
+}
+
+// Hiển thị kết quả preview
+function renderRecurringPreview(data) {
+    const result = document.getElementById('recurringPreviewResult');
+    if (!result) return;
+
+    const dowMap = {1:'T2',2:'T3',3:'T4',4:'T5',5:'T6',6:'T7',7:'CN'};
+    const fmtDate = s => {
+        const d = new Date(s + 'T00:00:00');
+        return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+    };
+
+    let datesHtml = '';
+    data.dates_available.forEach((d, i) => {
+        const dow = new Date(d + 'T00:00:00').getDay(); // 0=CN,1=T2...
+        const dowLabel = {0:'CN',1:'T2',2:'T3',3:'T4',4:'T5',5:'T6',6:'T7'}[dow];
+        datesHtml += `<span style="display:inline-block;background:#d1fae5;color:#065f46;border-radius:6px;padding:2px 8px;font-size:.75rem;font-weight:600;margin:2px;">${dowLabel} ${fmtDate(d)}</span>`;
+    });
+
+    let conflictHtml = '';
+    if (data.dates_conflict.length > 0) {
+        conflictHtml = `<div style="margin-top:.6rem;font-size:.78rem;color:#dc2626;">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            <strong>${data.dates_conflict.length} ngày bị trùng lịch</strong> (sẽ bỏ qua):
+            ${data.dates_conflict.map(d => `<span style="display:inline-block;background:#fee2e2;color:#991b1b;border-radius:6px;padding:2px 6px;font-size:.72rem;margin:1px;">${fmtDate(d)}</span>`).join('')}
+        </div>`;
+    }
+
+    result.style.display = 'block';
+    result.innerHTML = `
+        <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:1rem;">
+            <!-- Summary -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;margin-bottom:.8rem;">
+                <div style="background:#fff;border-radius:8px;padding:.6rem;text-align:center;">
+                    <div style="font-size:1.4rem;font-weight:800;color:#16a34a;">${data.total_sessions}</div>
+                    <div style="font-size:.72rem;color:#6b7280;">Buổi đặt</div>
+                </div>
+                <div style="background:#fff;border-radius:8px;padding:.6rem;text-align:center;">
+                    <div style="font-size:1.4rem;font-weight:800;color:#6366f1;">${parseInt(data.price_per_session).toLocaleString('vi-VN')}đ</div>
+                    <div style="font-size:.72rem;color:#6b7280;">Mỗi buổi</div>
+                </div>
+                <div style="background:#fff;border-radius:8px;padding:.6rem;text-align:center;">
+                    <div style="font-size:1.4rem;font-weight:800;color:#ef4444;">${parseInt(data.total_price).toLocaleString('vi-VN')}đ</div>
+                    <div style="font-size:.72rem;color:#6b7280;">Tổng tiền</div>
+                </div>
+            </div>
+
+            <div style="font-size:.82rem;color:#166534;margin-bottom:.6rem;">
+                <i class="fas fa-calendar-week me-1"></i>
+                <strong>${data.court_name}</strong> · ${data.start_time}–${data.end_time} · ${data.days_label}
+            </div>
+
+            <!-- Danh sách ngày -->
+            <div style="margin-bottom:.6rem;font-size:.78rem;font-weight:700;color:#166534;">
+                Các buổi sẽ được đặt:
+            </div>
+            <div style="max-height:140px;overflow-y:auto;margin-bottom:.4rem;">${datesHtml}</div>
+            ${conflictHtml}
+
+            <!-- Nút xác nhận -->
+            <div style="margin-top:1rem;display:flex;gap:.6rem;">
+                <select id="recurringPayMethod" style="flex:1;border:1.5px solid #86efac;border-radius:8px;padding:.45rem .7rem;font-size:.83rem;font-weight:600;color:#374151;">
+                    <option value="cash">💵 Tiền mặt tại sân</option>
+                    <option value="vnpay">🏦 MB Bank (chuyển khoản)</option>
+                    <option value="momo">💳 Ví MoMo</option>
+                </select>
+                <button onclick="confirmRecurring()" id="btnConfirmRecurring"
+                        style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:8px;padding:.45rem 1.2rem;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+                    <i class="fas fa-check me-1"></i> Xác nhận đặt ${data.total_sessions} buổi
+                </button>
+            </div>
+        </div>`;
+}
+
+// Xác nhận đặt định kỳ
+function confirmRecurring() {
+    const data     = window._recurringPreviewData;
+    const btn      = document.getElementById('btnConfirmRecurring');
+    const payMethod = document.getElementById('recurringPayMethod')?.value || 'cash';
+
+    if (!data) { alert('Vui lòng xem trước lịch đặt trước.'); return; }
+
+    const court    = window._bookingState?.selectedCourt;
+    const date     = window._bookingState?.selectedDate;
+    const time     = window._bookingState?.selectedTime;
+    const duration = window._bookingState?.selectedDuration || 1;
+    const endDate  = document.getElementById('recurringEndDate')?.value;
+    const notes    = document.getElementById('bookingNotes')?.value || '';
+
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Đang đặt...'; btn.disabled = true; }
+
+    const fd = new FormData();
+    fd.append('court_id',       court.id);
+    fd.append('start_time',     time);
+    fd.append('duration',       duration);
+    fd.append('start_date',     date);
+    fd.append('end_date',       endDate);
+    fd.append('payment_method', payMethod);
+    fd.append('notes',          notes);
+    fd.append('preview',        '0');
+    window._recurringDays.forEach(d => fd.append('days_of_week[]', d));
+
+    fetch('api/recurring-booking.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(res => {
+            if (!res.success) {
+                if (btn) { btn.innerHTML = '<i class="fas fa-check me-1"></i> Xác nhận đặt'; btn.disabled = false; }
+                alert('Lỗi: ' + res.error);
+                return;
+            }
+
+            // Ẩn recurring panel
+            const container = document.getElementById('recurringPreviewResult');
+            if (container) container.style.display = 'none';
+
+            if (payMethod === 'cash') {
+                // Hiện toast thành công rồi redirect
+                showRecurringSuccess(res);
+            } else {
+                // Hiện QR để chuyển khoản
+                showRecurringPayment(res, payMethod);
+            }
+        })
+        .catch(err => {
+            if (btn) { btn.innerHTML = '<i class="fas fa-check me-1"></i> Xác nhận đặt'; btn.disabled = false; }
+            alert('Lỗi kết nối: ' + err.message);
+        });
+}
+
+// Hiển thị thành công (cash)
+function showRecurringSuccess(res) {
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:1.2rem 1.5rem;border-radius:16px;box-shadow:0 10px 40px rgba(16,185,129,.3);min-width:300px;font-weight:600;';
+    toast.innerHTML = `
+        <div style="font-size:1rem;margin-bottom:.3rem;">🎉 Đặt sân định kỳ thành công!</div>
+        <div style="font-size:.82rem;opacity:.9;">Đã tạo <strong>${res.total_sessions}</strong> buổi · Tổng: <strong>${parseInt(res.total_price).toLocaleString('vi-VN')}đ</strong></div>
+        <div style="font-size:.75rem;opacity:.75;margin-top:.2rem;">Chuyển sang lịch sử đặt sân...</div>`;
+    document.body.appendChild(toast);
+    setTimeout(() => { window.location.href = 'booking-history.php'; }, 2500);
+}
+
+// Hiển thị QR thanh toán (bank/momo)
+function showRecurringPayment(res, payMethod) {
+    const isMomo = payMethod === 'momo';
+    const ref    = res.transfer_ref;
+    const amount = res.total_price;
+    const enc    = encodeURIComponent(ref);
+    const qrUrl  = isMomo
+        ? `https://img.vietqr.io/image/MOMO-0968073500-qr_only.png?amount=${amount}&addInfo=${enc}&accountName=LU+DANG+HUNG`
+        : `https://img.vietqr.io/image/MB-7369786789-qr_only.png?amount=${amount}&addInfo=${enc}&accountName=LU+DANG+HUNG`;
+    const color  = isMomo ? '#db2777' : '#4f46e5';
+
+    // Tạo overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'recurringPayOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;display:flex;align-items:center;justify-content:center;padding:1rem;';
+    overlay.innerHTML = `
+        <div style="background:#fff;border-radius:20px;padding:1.5rem;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                <div style="font-weight:800;color:${color};font-size:1rem;">
+                    <i class="fas fa-${isMomo ? 'wallet' : 'university'} me-2"></i>
+                    ${isMomo ? 'Thanh toán MoMo' : 'Chuyển khoản MB Bank'}
+                </div>
+                <button onclick="document.getElementById('recurringPayOverlay').remove();window.location.href='booking-history.php'"
+                        style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#6b7280;">×</button>
+            </div>
+
+            <div style="text-align:center;margin-bottom:1rem;">
+                <img src="${qrUrl}" alt="QR" style="width:160px;height:160px;border-radius:12px;border:2px solid #e5e7eb;padding:4px;background:#fff;">
+            </div>
+
+            <div style="font-size:.85rem;display:grid;gap:.4rem;margin-bottom:1rem;background:#f8fafc;border-radius:10px;padding:.8rem;">
+                ${isMomo
+                    ? `<div style="display:flex;justify-content:space-between;"><span style="color:#78716c;">Số MoMo</span><strong style="color:${color};">0968073500</strong></div>`
+                    : `<div style="display:flex;justify-content:space-between;"><span style="color:#78716c;">Ngân hàng</span><strong>MB Bank · 7369786789</strong></div>`
+                }
+                <div style="display:flex;justify-content:space-between;"><span style="color:#78716c;">Số tiền</span><strong style="color:${color};">${parseInt(amount).toLocaleString('vi-VN')}đ</strong></div>
+                <div>
+                    <span style="color:#78716c;display:block;font-size:.75rem;margin-bottom:3px;">📌 Nội dung CK:</span>
+                    <div style="display:flex;align-items:center;gap:.4rem;">
+                        <code style="background:#fff;border:1.5px solid ${color};border-radius:6px;padding:3px 10px;font-weight:700;color:${color};">${ref}</code>
+                        <button onclick="navigator.clipboard.writeText('${ref}').then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='📋',1500)})"
+                                style="background:${color};color:#fff;border:none;border-radius:5px;padding:3px 8px;cursor:pointer;">📋</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:.8rem;font-size:.8rem;color:#166534;text-align:center;">
+                <i class="fas fa-magic me-1"></i> Hệ thống tự động xác nhận · ${res.total_sessions} buổi · Không cần làm thêm gì
+            </div>
+
+            <div style="margin-top:.8rem;display:flex;gap:.5rem;">
+                <button onclick="window.location.href='booking-history.php'"
+                        style="flex:1;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:.6rem;font-size:.83rem;font-weight:600;color:#374151;cursor:pointer;">
+                    Xem lịch sử đặt sân
+                </button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+}
+
+// Expose bookingState để recurring functions có thể đọc
+document.addEventListener('DOMContentLoaded', function() {
+    // Hook vào bookingState sau khi DOMContentLoaded chạy xong
+    setTimeout(() => {
+        // bookingState được khai báo trong DOMContentLoaded scope,
+        // dùng MutationObserver để lắng nghe thay đổi selectedCourtName
+        const courtNameEl = document.getElementById('selectedCourtName');
+        const dateEl      = document.getElementById('bookingDate');
+        if (courtNameEl) {
+            const obs = new MutationObserver(() => {
+                // Sync from DOM elements vào window._bookingState
+                syncBookingState();
+            });
+            obs.observe(courtNameEl, { childList: true, characterData: true, subtree: true });
+        }
+        if (dateEl) {
+            dateEl.addEventListener('change', syncBookingState);
+        }
+    }, 500);
+});
+
+function syncBookingState() {
+    // Đọc lại từ các element hiện tại
+    const courtId   = document.querySelector('.court-booking-card.selected-court')?.dataset?.courtId;
+    const courtName = document.getElementById('selectedCourtName')?.textContent;
+    const courtPrice = parseInt((document.getElementById('selectedCourtPrice')?.textContent || '0').replace(/[^\d]/g, '')) || 0;
+    const date      = document.getElementById('bookingDate')?.value;
+    const selectedSlot = document.querySelector('.time-slot-enhanced.selected');
+    const time      = selectedSlot?.dataset?.time;
+    const endTime   = selectedSlot?.dataset?.endTime;
+    const duration  = parseInt(document.querySelector('.duration-option.selected')?.dataset?.duration || '1');
+
+    window._bookingState = {
+        selectedCourt: courtId ? { id: courtId, name: courtName, price: courtPrice } : null,
+        selectedDate:  date || null,
+        selectedTime:  time || null,
+        selectedEndTime: endTime || null,
+        selectedDuration: duration,
+    };
+}
+
+// Patch selectTimeSlot để sync state
+const _origSelectTimeSlot = window.selectTimeSlot;
+window.selectTimeSlot = function(element) {
+    if (_origSelectTimeSlot) _origSelectTimeSlot(element);
+    setTimeout(syncBookingState, 100);
+};
+
 // Enhanced CSS for beautiful booking interface
-const enhancedStyle = document.createElement('style');
 enhancedStyle.textContent = `
     /* Enhanced Time Slots Styling */
     .time-slot-enhanced {

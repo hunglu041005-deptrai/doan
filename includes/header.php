@@ -20,6 +20,9 @@ if (!$isAdminPage && isAdmin()) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Nền tảng đặt sân cầu lông trực tuyến hàng đầu Hà Nội. Đặt sân nhanh, giá rẻ, thanh toán linh hoạt.">
     <title><?php echo $isAdminPage ? 'Admin - Hưng Dũng Booking' : 'Hưng Dũng Booking - Đặt Sân Cầu Lông'; ?></title>
+    <!-- Favicon cầu lông -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1a2e'/><circle cx='50' cy='58' r='22' fill='none' stroke='%23ff6b35' stroke-width='5'/><line x1='50' y1='36' x2='50' y2='20' stroke='%23ffffff' stroke-width='4' stroke-linecap='round'/><ellipse cx='50' cy='16' rx='8' ry='5' fill='%23ff6b35'/><line x1='34' y1='42' x2='22' y2='34' stroke='%23ffffff' stroke-width='3' stroke-linecap='round'/><line x1='66' y1='42' x2='78' y2='34' stroke='%23ffffff' stroke-width='3' stroke-linecap='round'/><line x1='30' y1='58' x2='16' y2='58' stroke='%23ffffff' stroke-width='3' stroke-linecap='round'/><line x1='70' y1='58' x2='84' y2='58' stroke='%23ffffff' stroke-width='3' stroke-linecap='round'/></svg>">
+    <link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1a2e'/><circle cx='50' cy='58' r='22' fill='none' stroke='%23ff6b35' stroke-width='5'/><line x1='50' y1='36' x2='50' y2='20' stroke='%23ffffff' stroke-width='4' stroke-linecap='round'/><ellipse cx='50' cy='16' rx='8' ry='5' fill='%23ff6b35'/></svg>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">

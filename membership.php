@@ -8,20 +8,72 @@ if ($col_check && $col_check->num_rows === 0) {
 }
 
 // Auto-expire và lấy membership hiện tại
-$activeMembership   = isLoggedIn() ? getActiveMembership((int)$_SESSION['user_id']) : null;
-$ticketsRemaining   = $activeMembership ? getMembershipTicketsRemaining($activeMembership) : 0;
-$allMemberships     = isLoggedIn() ? getUserMemberships((int)$_SESSION['user_id']) : [];
+$activeMembership = isLoggedIn() ? getActiveMembership((int)$_SESSION['user_id']) : null;
+$ticketsRemaining = $activeMembership ? getMembershipTicketsRemaining($activeMembership) : 0;
+$allMemberships   = isLoggedIn() ? getUserMemberships((int)$_SESSION['user_id']) : [];
+
+// Lọc sân được chọn
+$selectedCourtId = isset($_GET['court_id']) ? (int)$_GET['court_id'] : 0;
+
+// Lấy tất cả sân để hiển thị dropdown
+$allCourts = $mysqli->query("SELECT id, name, location, cover_image FROM courts WHERE status=1 ORDER BY name")->fetch_all(MYSQLI_ASSOC);
+
+// Lấy gói từ DB — tạo bảng trước nếu chưa có
+$mysqli->query("CREATE TABLE IF NOT EXISTS membership_plans (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    court_id     INT DEFAULT NULL,
+    name         VARCHAR(150) NOT NULL,
+    detail       VARCHAR(150) NOT NULL,
+    price_per    INT NOT NULL DEFAULT 80000,
+    total_price  INT NOT NULL DEFAULT 720000,
+    months       INT NOT NULL DEFAULT 3,
+    free_tickets INT NOT NULL DEFAULT 11,
+    time_range   VARCHAR(30) DEFAULT '14H-17H',
+    sale_start   DATE DEFAULT NULL,
+    sale_end     DATE DEFAULT NULL,
+    status       TINYINT DEFAULT 1,
+    sort_order   INT DEFAULT 0,
+    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_court (court_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+$today = date('Y-m-d');
+$plansQuery = $selectedCourtId
+    ? $mysqli->prepare("SELECT mp.*, c.name AS court_name FROM membership_plans mp LEFT JOIN courts c ON c.id=mp.court_id WHERE mp.status=1 AND (mp.court_id=? OR mp.court_id IS NULL) AND (mp.sale_start IS NULL OR mp.sale_start<=?) AND (mp.sale_end IS NULL OR mp.sale_end>=?) ORDER BY mp.court_id IS NOT NULL DESC, mp.sort_order, mp.id")
+    : $mysqli->prepare("SELECT mp.*, c.name AS court_name FROM membership_plans mp LEFT JOIN courts c ON c.id=mp.court_id WHERE mp.status=1 AND (mp.sale_start IS NULL OR mp.sale_start<=?) AND (mp.sale_end IS NULL OR mp.sale_end>=?) ORDER BY mp.court_id IS NULL DESC, mp.sort_order, mp.id");
+
+if ($selectedCourtId) { $plansQuery->bind_param('iss', $selectedCourtId, $today, $today); }
+else                  { $plansQuery->bind_param('ss', $today, $today); }
+$plansQuery->execute();
+$dbPlans = $plansQuery->get_result()->fetch_all(MYSQLI_ASSOC);
+$plansQuery->close();
+
+// Fallback nếu DB chưa có
+if (empty($dbPlans)) {
+    $dbPlans = [
+        ['id'=>1,'court_id'=>null,'court_name'=>null,'name'=>'COMBO CHIỀU 14H–17H','detail'=>'5 VÉ TẶNG 0 VÉ', 'price_per'=>80000,'total_price'=>400000, 'months'=>1, 'free_tickets'=>5, 'time_range'=>'14H–17H','sale_start'=>null,'sale_end'=>null],
+        ['id'=>2,'court_id'=>null,'court_name'=>null,'name'=>'COMBO CHIỀU 14H–17H','detail'=>'10 VÉ TẶNG 1 VÉ','price_per'=>80000,'total_price'=>720000, 'months'=>3, 'free_tickets'=>11,'time_range'=>'14H–17H','sale_start'=>null,'sale_end'=>null],
+        ['id'=>3,'court_id'=>null,'court_name'=>null,'name'=>'COMBO CHIỀU 14H–17H','detail'=>'20 VÉ TẶNG 2 VÉ','price_per'=>80000,'total_price'=>1440000,'months'=>6, 'free_tickets'=>22,'time_range'=>'14H–17H','sale_start'=>null,'sale_end'=>null],
+        ['id'=>4,'court_id'=>null,'court_name'=>null,'name'=>'COMBO TỐI 20H–22H',  'detail'=>'20 VÉ TẶNG 2 VÉ','price_per'=>80000,'total_price'=>1440000,'months'=>9, 'free_tickets'=>22,'time_range'=>'20H–22H','sale_start'=>null,'sale_end'=>null],
+        ['id'=>5,'court_id'=>null,'court_name'=>null,'name'=>'COMBO TỐI 20H–22H',  'detail'=>'30 VÉ TẶNG 3 VÉ','price_per'=>80000,'total_price'=>2160000,'months'=>12,'free_tickets'=>33,'time_range'=>'20H–22H','sale_start'=>null,'sale_end'=>null],
+        ['id'=>6,'court_id'=>null,'court_name'=>null,'name'=>'COMBO CHIỀU 15H–18H','detail'=>'10 VÉ TẶNG 1 VÉ','price_per'=>80000,'total_price'=>720000, 'months'=>3, 'free_tickets'=>11,'time_range'=>'15H–18H','sale_start'=>null,'sale_end'=>null],
+        ['id'=>7,'court_id'=>null,'court_name'=>null,'name'=>'COMBO CHIỀU 15H–18H','detail'=>'20 VÉ TẶNG 2 VÉ','price_per'=>80000,'total_price'=>1440000,'months'=>6, 'free_tickets'=>22,'time_range'=>'15H–18H','sale_start'=>null,'sale_end'=>null],
+    ];
+}
+
+// Tên sân đang chọn
+$selectedCourtName = '';
+if ($selectedCourtId) {
+    foreach ($allCourts as $c) { if ($c['id'] == $selectedCourtId) { $selectedCourtName = $c['name']; break; } }
+}
+
+// plans array cho JS (legacy format)
+$plans = [];
+foreach ($dbPlans as $p) {
+    $plans[] = ['id'=>$p['id'],'label'=>$p['name'],'sub'=>$p['detail'],'price'=>(int)$p['total_price'],'months'=>(int)$p['months'],'free'=>(int)$p['free_tickets'],'time'=>$p['time_range'],'price_per'=>(int)$p['price_per'],'popular'=>false,'court_id'=>$p['court_id'],'court_name'=>$p['court_name'],'sale_start'=>$p['sale_start'],'sale_end'=>$p['sale_end']];
+}
 
 require_once __DIR__ . '/includes/header.php';
-
-$plans = [
-    ['id'=>1,'label'=>'COMBO CHIỀU 14H–17H','sub'=>'10 VÉ TẶNG 1 VÉ','price'=>720000,'months'=>3,'free'=>11,'time'=>'14H–17H','price_per'=>80000,'popular'=>false],
-    ['id'=>2,'label'=>'COMBO CHIỀU 14H–17H','sub'=>'20 VÉ TẶNG 2 VÉ','price'=>1440000,'months'=>6,'free'=>22,'time'=>'14H–17H','price_per'=>80000,'popular'=>true],
-    ['id'=>3,'label'=>'COMBO TỐI 20H–22H (T7,CN)','sub'=>'20 VÉ TẶNG 2 VÉ','price'=>1440000,'months'=>9,'free'=>22,'time'=>'20H–22H','price_per'=>80000,'popular'=>false],
-    ['id'=>4,'label'=>'COMBO TỐI 20H–22H (T7,CN)','sub'=>'30 VÉ TẶNG 3 VÉ','price'=>2160000,'months'=>12,'free'=>33,'time'=>'20H–22H','price_per'=>80000,'popular'=>false],
-    ['id'=>5,'label'=>'COMBO CHIỀU 15H–18H','sub'=>'10 VÉ TẶNG 1 VÉ','price'=>720000,'months'=>3,'free'=>11,'time'=>'15H–18H','price_per'=>80000,'popular'=>false],
-    ['id'=>6,'label'=>'COMBO CHIỀU 15H–18H','sub'=>'20 VÉ TẶNG 2 VÉ','price'=>1440000,'months'=>6,'free'=>22,'time'=>'15H–18H','price_per'=>80000,'popular'=>false],
-];
 ?>
 
 <style>
@@ -502,8 +554,69 @@ $plans = [
                 <div class="col-lg-8">
                     <div class="section-header text-start mb-4">
                         <h2 style="font-size:1.5rem;">Danh sách gói hội viên</h2>
-                        <p>Chọn gói phù hợp với lịch chơi của bạn</p>
+                        <p>Chọn sân trước, hệ thống hiện các gói combo phù hợp</p>
                     </div>
+
+                    <!-- ── Bước 1: Chọn sân ── -->
+                    <div style="margin-bottom:1.5rem;">
+                        <div style="font-size:.82rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.7rem;">
+                            <i class="fas fa-map-marker-alt me-1 text-success"></i> Bước 1 — Chọn sân bạn muốn đăng ký gói
+                        </div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.7rem;" id="courtPickerGrid">
+                            <!-- Tất cả sân -->
+                            <a href="membership.php#step2" style="text-decoration:none;">
+                                <?php $isAllSelected = ($selectedCourtId === 0); ?>
+                                <div style="border:2px solid <?php echo $isAllSelected?'#16a34a':'#e5e7eb'; ?>;border-radius:12px;padding:.7rem .9rem;background:<?php echo $isAllSelected?'#f0fdf4':'#fff'; ?>;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.6rem;">
+                                    <div style="width:36px;height:36px;border-radius:8px;background:#d1fae5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                        <i class="fas fa-globe" style="color:#16a34a;"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight:700;font-size:.82rem;color:#111;">Tất cả sân</div>
+                                        <div style="font-size:.72rem;color:#9ca3af;">Gói chung</div>
+                                    </div>
+                                    <?php if ($isAllSelected): ?><i class="fas fa-check-circle ms-auto" style="color:#16a34a;"></i><?php endif; ?>
+                                </div>
+                            </a>
+                            <?php foreach ($allCourts as $c):
+                                $isSelected = ((int)$c['id'] === $selectedCourtId);
+                            ?>
+                            <a href="membership.php?court_id=<?php echo (int)$c['id']; ?>#step2" style="text-decoration:none;">
+                                <div style="border:2px solid <?php echo $isSelected?'#16a34a':'#e5e7eb'; ?>;border-radius:12px;padding:.7rem .9rem;background:<?php echo $isSelected?'#f0fdf4':'#fff'; ?>;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.6rem;">
+                                    <?php if (!empty($c['cover_image'])): ?>
+                                    <img src="<?php echo escape($c['cover_image']); ?>" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0;" alt="">
+                                    <?php else: ?>
+                                    <div style="width:36px;height:36px;border-radius:8px;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                        <i class="fas fa-table-tennis" style="color:#3b82f6;"></i>
+                                    </div>
+                                    <?php endif; ?>
+                                    <div style="min-width:0;">
+                                        <div style="font-weight:700;font-size:.82rem;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?php echo escape($c['name']); ?></div>
+                                        <div style="font-size:.72rem;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?php echo escape($c['location']); ?></div>
+                                    </div>
+                                    <?php if ($isSelected): ?><i class="fas fa-check-circle ms-auto flex-shrink-0" style="color:#16a34a;"></i><?php endif; ?>
+                                </div>
+                            </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+
+                    <!-- ── Bước 2: Gói combo ── -->
+                    <div id="step2" style="font-size:.82rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.7rem;scroll-margin-top:80px;">
+                        <i class="fas fa-tags me-1 text-success"></i> Bước 2 — Gói combo
+                        <?php if ($selectedCourtId && $selectedCourtName): ?>
+                        <span style="background:#d1fae5;color:#166534;border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:700;margin-left:.4rem;text-transform:none;">
+                            📍 <?php echo escape($selectedCourtName); ?>
+                        </span>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if (empty($plans)): ?>
+                    <div style="text-align:center;padding:2.5rem 1rem;background:#f9fafb;border-radius:16px;border:2px dashed #e5e7eb;">
+                        <i class="fas fa-tags fa-2x" style="color:#d1d5db;margin-bottom:.8rem;display:block;"></i>
+                        <div style="font-weight:700;color:#6b7280;margin-bottom:.3rem;">Chưa có gói combo cho sân này</div>
+                        <div style="font-size:.82rem;color:#9ca3af;">Thử chọn sân khác hoặc xem gói chung</div>
+                    </div>
+                    <?php endif; ?>
 
                     <?php foreach ($plans as $p): ?>
                     <div class="plan-card <?php echo $p['popular'] ? 'popular' : ''; ?>">
@@ -515,13 +628,18 @@ $plans = [
                             <?php echo $p['id']; ?> Thẻ hội viên
                         </div>
 
-                        <div class="plan-price-tag">GIÁ <?php echo number_format($p['price_per']/1000); ?>0K/VÉ</div>
-                        <div class="plan-name"><?php echo $p['label']; ?> : <?php echo $p['sub']; ?></div>
+                        <div class="plan-price-tag">GIÁ <?php echo number_format($p['price_per']); ?>đ/VÉ</div>
+                        <div class="plan-name"><?php echo escape($p['label']); ?> : <?php echo escape($p['sub']); ?></div>
 
+                        <?php if ($p['sale_start'] || $p['sale_end']): ?>
                         <div class="plan-date-row">
                             <i class="fas fa-calendar-alt text-success"></i>
-                            Mở bán: 01/06/2026 – 31/12/2026
+                            Mở bán:
+                            <?php echo $p['sale_start'] ? date('d/m/Y', strtotime($p['sale_start'])) : '...'; ?>
+                            –
+                            <?php echo $p['sale_end']   ? date('d/m/Y', strtotime($p['sale_end']))   : '...'; ?>
                         </div>
+                        <?php endif; ?>
 
                         <div class="plan-meta-row">
                             <div class="meta-chip">
@@ -532,10 +650,18 @@ $plans = [
                                 <i class="fas fa-gift"></i>
                                 Miễn phí <span class="chip-val"><?php echo $p['free']; ?> vé</span>
                             </div>
+                            <?php if (!empty($p['time'])): ?>
                             <div class="meta-chip">
-                                <i class="fas fa-shuttlecock"></i>
-                                Cầu lông
+                                <i class="fas fa-clock"></i>
+                                <span class="chip-val"><?php echo escape($p['time']); ?></span>
                             </div>
+                            <?php endif; ?>
+                            <?php if ($p['court_name']): ?>
+                            <div class="meta-chip" style="background:#dbeafe;color:#1d4ed8;">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span><?php echo escape($p['court_name']); ?></span>
+                            </div>
+                            <?php endif; ?>
                         </div>
 
                         <div class="plan-bottom">
@@ -548,7 +674,7 @@ $plans = [
                                     Đăng ký <i class="fas fa-chevron-right"></i>
                                 </a>
                             <?php else: ?>
-                                <a href="login.php?redirect=membership.php" class="btn-register">
+                                <a href="login.php?redirect=membership.php<?php echo $selectedCourtId ? '?court_id='.$selectedCourtId : ''; ?>" class="btn-register">
                                     Đăng ký <i class="fas fa-chevron-right"></i>
                                 </a>
                             <?php endif; ?>
@@ -652,6 +778,14 @@ $plans = [
                                     class="btn w-100 mt-2 py-2"
                                     style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:10px;font-size:.82rem;font-weight:600;">
                                 <i class="fas fa-history me-2"></i>Lịch sử dùng vé
+                            </button>
+
+                            <!-- Nút tạo lịch tự động -->
+                            <button onclick="createMemberBookings(<?php echo $activeMembership['id']; ?>)"
+                                    id="btnCreateBookings"
+                                    class="btn w-100 mt-2 py-2"
+                                    style="background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3);border-radius:10px;font-size:.82rem;font-weight:600;">
+                                <i class="fas fa-calendar-plus me-2"></i>Tạo lịch đặt sân tự động
                             </button>
 
                             <?php if($ticketsRemaining <= 0 || $daysLeft <= 0): ?>
@@ -787,6 +921,35 @@ $plans = [
 
 <!-- ===== MEMBERSHIP WAITING CONTAINER (hiện khi chờ chuyển khoản) ===== -->
 <div id="membershipWaitingContainer" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:1050;padding:1rem;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);"></div>
+
+<!-- ===== MODAL CHỌN SÂN TẠO LỊCH ===== -->
+<div class="modal fade" id="selectCourtModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#16a34a,#15803d);padding:1.2rem 1.5rem;color:#fff;">
+                <h6 class="fw-bold mb-0"><i class="fas fa-map-marker-alt me-2"></i>Chọn sân tạo lịch tự động</h6>
+                <small style="opacity:.7;">Hệ thống sẽ đặt slot 14H-17H mỗi ngày</small>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="selectCourtMembershipId">
+                <label class="form-label fw-bold">Chọn sân</label>
+                <select id="selectCourtDropdown" class="form-select">
+                    <option value="">-- Chọn sân --</option>
+                    <?php foreach ($allCourts as $c): ?>
+                    <option value="<?php echo (int)$c['id']; ?>"><?php echo escape($c['name']); ?> — <?php echo escape($c['location']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <small class="text-muted mt-1 d-block">Sân này sẽ được giữ slot theo gói combo của bạn</small>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-success btn-sm fw-bold" onclick="confirmSelectCourt()">
+                    <i class="fas fa-calendar-plus me-1"></i>Tạo lịch
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ===== PAYMENT MODAL ===== -->
 <div class="modal fade" id="paymentModal" tabindex="-1">
@@ -1048,20 +1211,40 @@ $plans = [
 
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
-const plansData = {
-    1: {badge:'1 Thẻ hội viên', label:'GIÁ 80K/VÉ', name:'COMBO CHIỀU 14H–17H : 10 VÉ TẶNG 1 VÉ', price:720000, months:3, free:11},
-    2: {badge:'2 Thẻ hội viên', label:'GIÁ 80K/VÉ', name:'COMBO CHIỀU 14H–17H : 20 VÉ TẶNG 2 VÉ', price:1440000, months:6, free:22},
-    3: {badge:'3 Thẻ hội viên', label:'GIÁ 80K/VÉ', name:'COMBO TỐI 20H–22H : 20 VÉ TẶNG 2 VÉ', price:1440000, months:9, free:22},
-    4: {badge:'4 Thẻ hội viên', label:'GIÁ 80K/VÉ', name:'COMBO TỐI 20H–22H : 30 VÉ TẶNG 3 VÉ', price:2160000, months:12, free:33},
-    5: {badge:'5 Thẻ hội viên', label:'GIÁ 80K/VÉ', name:'COMBO CHIỀU 15H–18H : 10 VÉ TẶNG 1 VÉ', price:720000, months:3, free:11},
-    6: {badge:'6 Thẻ hội viên', label:'GIÁ 80K/VÉ', name:'COMBO CHIỀU 15H–18H : 20 VÉ TẶNG 2 VÉ', price:1440000, months:6, free:22},
-};
+// plansData được generate từ PHP — có đầy đủ court_id, time_range
+const plansData = <?php
+$jsPlans = [];
+foreach ($plans as $p) {
+    $jsPlans[$p['id']] = [
+        'badge'      => $p['id'] . ' Thẻ hội viên',
+        'label'      => 'GIÁ ' . number_format($p['price_per']) . 'đ/VÉ',
+        'name'       => $p['label'] . ' : ' . $p['sub'],
+        'price'      => (int)$p['price'],
+        'months'     => (int)$p['months'],
+        'free'       => (int)$p['free'],
+        'court_id'   => $p['court_id'] ? (int)$p['court_id'] : null,
+        'court_name' => $p['court_name'] ?? null,
+        'time_range' => $p['time'] ?? '',
+    ];
+}
+echo json_encode($jsPlans, JSON_UNESCAPED_UNICODE);
+?>;
 
 let currentPlanId = null;
 
 function registerPlan(planId) {
     currentPlanId = planId;
     const p = plansData[planId];
+
+    // Nếu gói global (không có court_id) và URL không có court_id → hỏi chọn sân
+    const urlCourtId = new URLSearchParams(window.location.search).get('court_id');
+    if (!p.court_id && !urlCourtId) {
+        // Redirect về trang chọn sân
+        if (confirm('Gói này có thể áp dụng cho tất cả sân.\nBạn muốn chọn sân cụ thể để đặt lịch tự động?\n\nBấm OK → chọn sân\nBấm Hủy → mua gói không gắn sân')) {
+            window.location.href = 'membership.php#courtPickerGrid';
+            return;
+        }
+    }
 
     document.getElementById('pm-plan-badge').textContent = p.badge;
     document.getElementById('pm-plan-label').textContent = p.label;
@@ -1101,6 +1284,11 @@ document.getElementById('btn-confirm-payment').addEventListener('click', functio
     formData.append('payment_method', method);
     formData.append('action', 'register');
 
+    // Truyền court_id: ưu tiên court_id của gói, fallback sang court_id từ URL (trang đang xem)
+    const planCourtId = plansData[currentPlanId]?.court_id
+        || (new URLSearchParams(window.location.search).get('court_id') ? parseInt(new URLSearchParams(window.location.search).get('court_id')) : null);
+    if (planCourtId) formData.append('court_id', planCourtId);
+
     fetch('api/membership.php', { method: 'POST', body: formData })
         .then(r => {
             if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + r.statusText);
@@ -1110,6 +1298,16 @@ document.getElementById('btn-confirm-payment').addEventListener('click', functio
             if (data.success) {
                 bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
                 if (method === 'cash') {
+                    // Hiện thông báo nếu đã tạo bookings định kỳ
+                    if (data.booking_created > 0) {
+                        const p = plansData[currentPlanId];
+                        const courtName = p?.court_name || '';
+                        const note = document.createElement('div');
+                        note.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;padding:.9rem 1.5rem;border-radius:14px;box-shadow:0 8px 30px rgba(29,78,216,.3);font-weight:600;font-size:.88rem;text-align:center;min-width:320px;';
+                        note.innerHTML = `<i class="fas fa-calendar-check me-2"></i>Đã tự động đặt <strong>${data.booking_created} buổi</strong> khung giờ ${p?.time_range || ''} cho <strong>${courtName}</strong>`;
+                        document.body.appendChild(note);
+                        setTimeout(() => { note.style.opacity='0'; note.style.transition='opacity .5s'; setTimeout(()=>note.remove(),500); }, 4000);
+                    }
                     showMemberCard(data);
                 } else {
                     showTransferWaiting(data);
@@ -1413,6 +1611,59 @@ function formatDate(dateStr) {
 }
 
 function printMemberCard() { window.print(); }
+
+// ── Tạo lịch đặt sân tự động từ gói hội viên ──
+function createMemberBookings(membershipId) {
+    // Lấy court_id từ URL
+    const urlCourtId = new URLSearchParams(window.location.search).get('court_id');
+    if (urlCourtId) {
+        doCreateBookings(membershipId, parseInt(urlCourtId));
+        return;
+    }
+    // Không có court_id trong URL → hiện modal chọn sân
+    document.getElementById('selectCourtMembershipId').value = membershipId;
+    new bootstrap.Modal(document.getElementById('selectCourtModal')).show();
+}
+
+function doCreateBookings(membershipId, courtId) {
+    const btn = document.getElementById('btnCreateBookings');
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang tạo lịch...'; btn.disabled = true; }
+
+    const fd = new FormData();
+    fd.append('action', 'create_bookings');
+    fd.append('membership_id', membershipId);
+    fd.append('court_id', courtId);
+
+    fetch('api/membership.php', { method: 'POST', body: fd })
+        .then(r => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
+        .then(data => {
+            if (btn) { btn.innerHTML = '<i class="fas fa-calendar-plus me-2"></i>Tạo lịch đặt sân tự động'; btn.disabled = false; }
+            if (data.success) {
+                const msg = data.created > 0
+                    ? `✅ Đã tạo ${data.created} buổi cho khung giờ ${data.time_range}!${data.skipped > 0 ? '\n(' + data.skipped + ' buổi bị trùng lịch đã bỏ qua)' : ''}`
+                    : `⚠️ Không tạo được buổi nào (khung giờ ${data.time_range} đã bị đặt hết hoặc không hợp lệ)`;
+                alert(msg);
+                if (data.created > 0) window.location.reload();
+            } else {
+                alert('Lỗi: ' + (data.error || 'Không xác định'));
+            }
+        })
+        .catch(err => {
+            if (btn) { btn.innerHTML = '<i class="fas fa-calendar-plus me-2"></i>Tạo lịch đặt sân tự động'; btn.disabled = false; }
+            alert('Lỗi: ' + err.message);
+        });
+}
+
+function confirmSelectCourt() {
+    const sel = document.getElementById('selectCourtDropdown');
+    const mid = document.getElementById('selectCourtMembershipId').value;
+    if (!sel.value) { alert('Vui lòng chọn sân'); return; }
+    bootstrap.Modal.getInstance(document.getElementById('selectCourtModal')).hide();
+    doCreateBookings(parseInt(mid), parseInt(sel.value));
+}
 
 // ── Lịch sử dùng vé ──
 function showTicketLog(membershipId) {

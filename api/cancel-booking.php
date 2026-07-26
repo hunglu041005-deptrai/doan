@@ -42,10 +42,7 @@ if ($bookingDT <= time()) {
     exit;
 }
 
-$upd = $mysqli->prepare(
-    "UPDATE bookings SET status='cancelled', cancelled_at=NOW() WHERE id=? AND user_id=?"
-);
-// Thêm cột nếu chưa có
+// Thêm cột cancelled_at nếu chưa có — TRƯỚC KHI UPDATE
 $chk = $mysqli->query("SHOW COLUMNS FROM bookings LIKE 'cancelled_at'");
 if ($chk && $chk->num_rows === 0) {
     $mysqli->query("ALTER TABLE bookings ADD COLUMN cancelled_at DATETIME DEFAULT NULL");

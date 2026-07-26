@@ -199,6 +199,79 @@ require_once __DIR__ . '/includes/header.php';
                         </div>
                     </div>
                     
+                    <!-- ===== RECURRING BOOKING PANEL ===== -->
+                    <div class="mt-4" id="recurringPanel">
+                        <div style="background:linear-gradient(135deg,#eff6ff,#f0f9ff);border:2px solid #93c5fd;border-radius:16px;padding:1.1rem 1.3rem;position:relative;overflow:hidden;">
+                            <div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(135deg,#3b82f6,#0ea5e9);border-radius:16px 0 0 16px;"></div>
+                            <div style="padding-left:.3rem;">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="fw-bold" style="color:#1d4ed8;font-size:.97rem;">
+                                            <i class="fas fa-calendar-week me-2"></i>Đặt sân định kỳ
+                                        </div>
+                                        <div style="font-size:.78rem;color:#64748b;margin-top:3px;">
+                                            Đặt liên tục T2–CN trong 1 tháng — hệ thống tự tạo toàn bộ lịch
+                                        </div>
+                                    </div>
+                                    <div class="form-check form-switch mb-0 ms-3">
+                                        <input class="form-check-input" type="checkbox" id="recurringToggle"
+                                               style="width:48px;height:24px;cursor:pointer;">
+                                    </div>
+                                </div>
+
+                                <!-- Recurring options (ẩn mặc định) -->
+                                <div id="recurringOptions" style="display:none;margin-top:1rem;border-top:1px solid #bfdbfe;padding-top:1rem;">
+
+                                    <div style="background:#fff;border:1px solid #bfdbfe;border-radius:10px;padding:.7rem 1rem;margin-bottom:1rem;font-size:.8rem;color:#1e40af;">
+                                        <i class="fas fa-lightbulb" style="color:#f59e0b;margin-right:.4rem;"></i>
+                                        <strong>Cách dùng:</strong> Chọn ngày trong tuần → chọn ngày kết thúc → nhấn <strong>"Xem trước"</strong> → xác nhận đặt tất cả buổi.
+                                    </div>
+
+                                    <!-- Ngày trong tuần -->
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold" style="font-size:.85rem;color:#374151;">
+                                            <i class="fas fa-calendar-day me-1 text-primary"></i>Chọn các ngày trong tuần
+                                        </label>
+                                        <div class="d-flex gap-2 flex-wrap" id="daysOfWeekPicker">
+                                            <?php
+                                            $dows = [1=>'T2',2=>'T3',3=>'T4',4=>'T5',5=>'T6',6=>'T7',7=>'CN'];
+                                            foreach ($dows as $v => $l):
+                                            ?>
+                                            <span class="dow-badge" data-val="<?php echo $v; ?>"
+                                                  onclick="toggleDow(<?php echo $v; ?>)"
+                                                  style="display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;border:2px solid #cbd5e1;font-weight:700;font-size:.85rem;color:#64748b;background:#fff;transition:all .2s;cursor:pointer;user-select:none;">
+                                                <?php echo $l; ?>
+                                            </span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <small class="text-muted mt-1 d-block">Nhấn vào ô ngày để chọn (xanh = đã chọn)</small>
+                                    </div>
+
+                                    <!-- Ngày kết thúc -->
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold" style="font-size:.85rem;color:#374151;">
+                                            <i class="fas fa-flag-checkered me-1 text-danger"></i>Đặt đến ngày
+                                        </label>
+                                        <input type="date" id="recurringEndDate" class="form-control"
+                                               min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>"
+                                               max="<?php echo date('Y-m-d', strtotime('+1 year')); ?>">
+                                        <small class="text-muted">Ngày bắt đầu = ngày bạn đang chọn bên trên · Tối đa 1 năm</small>
+                                    </div>
+
+                                    <!-- Preview button -->
+                                    <button type="button" id="btnRecurringPreview"
+                                            onclick="previewRecurring()"
+                                            style="width:100%;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:10px;padding:.75rem;font-size:.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;">
+                                        <i class="fas fa-eye"></i> Xem trước danh sách buổi đặt
+                                    </button>
+
+                                    <!-- Preview result -->
+                                    <div id="recurringPreviewResult" style="display:none;margin-top:1rem;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="booking-actions mt-4">
                         <button class="btn btn-outline-secondary me-2" id="backToStep1">
                             <i class="fas fa-arrow-left me-2"></i>Quay lại

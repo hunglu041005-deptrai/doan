@@ -179,12 +179,12 @@ require_once __DIR__ . '/../includes/header.php';
                                 
                                 <div class="mb-3">
                                     <strong>Người nhận:</strong><br>
-                                    <span><?php echo htmlspecialchars($order_detail['shipping_name']); ?></span>
+                                    <span><?php echo htmlspecialchars($order_detail['shipping_name'] ?? $order_detail['customer_name'] ?? '—'); ?></span>
                                 </div>
                                 
                                 <div class="mb-3">
                                     <strong>Số điện thoại:</strong><br>
-                                    <span><?php echo htmlspecialchars($order_detail['shipping_phone']); ?></span>
+                                    <span><?php echo htmlspecialchars($order_detail['shipping_phone'] ?? $order_detail['customer_phone'] ?? '—'); ?></span>
                                 </div>
                                 
                                 <div class="mb-3">
@@ -192,10 +192,10 @@ require_once __DIR__ . '/../includes/header.php';
                                     <span><?php echo nl2br(htmlspecialchars($order_detail['shipping_address'])); ?></span>
                                 </div>
                                 
-                                <?php if ($order_detail['order_note']): ?>
+                                <?php if (!empty($order_detail['order_note'] ?? $order_detail['notes'] ?? '')): ?>
                                     <div class="mb-3">
                                         <strong>Ghi chú:</strong><br>
-                                        <span class="text-muted"><?php echo nl2br(htmlspecialchars($order_detail['order_note'])); ?></span>
+                                        <span class="text-muted"><?php echo nl2br(htmlspecialchars($order_detail['order_note'] ?? $order_detail['notes'] ?? '')); ?></span>
                                     </div>
                                 <?php endif; ?>
                                 

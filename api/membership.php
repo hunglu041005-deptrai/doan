@@ -114,19 +114,46 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     apiError('Method not allowed.', 405);
 }
 
-$plans = [
-    1 => ['name'=>'COMBO CHIỀU 14H–17H', 'detail'=>'10 VÉ TẶNG 5 VÉ',  'price'=>720000,  'months'=>3,  'free'=>11],
-    2 => ['name'=>'COMBO CHIỀU 14H–17H', 'detail'=>'20 VÉ TẶNG 10 VÉ',  'price'=>1440000, 'months'=>6,  'free'=>22],
-    3 => ['name'=>'COMBO TỐI 20H–22H',   'detail'=>'20 VÉ TẶNG 10 VÉ',  'price'=>1440000, 'months'=>9,  'free'=>22],
-    4 => ['name'=>'COMBO TỐI 20H–22H',   'detail'=>'30 VÉ TẶNG 20 VÉ',  'price'=>2160000, 'months'=>12, 'free'=>33],
-    5 => ['name'=>'COMBO CHIỀU 15H–18H', 'detail'=>'10 VÉ TẶNG 5 VÉ',  'price'=>720000,  'months'=>3,  'free'=>11],
-    6 => ['name'=>'COMBO CHIỀU 15H–18H', 'detail'=>'20 VÉ TẶNG 10 VÉ',  'price'=>1440000, 'months'=>6,  'free'=>22],
-];
+$plans = [];
+// Đọc gói từ DB (membership_plans table)
+$plansCheck = $mysqli->query("SHOW TABLES LIKE 'membership_plans'");
+if ($plansCheck && $plansCheck->num_rows > 0) {
+    $plansRes = $mysqli->query("SELECT * FROM membership_plans WHERE status=1 ORDER BY sort_order, id");
+    if ($plansRes) {
+        while ($row = $plansRes->fetch_assoc()) {
+            $plans[$row['id']] = [
+                'name'       => $row['name'],
+                'detail'     => $row['detail'],
+                'price'      => (int)$row['total_price'],
+                'months'     => (int)$row['months'],
+                'free'       => (int)$row['free_tickets'],
+                'price_per'  => (int)$row['price_per'],
+                'time_range' => $row['time_range'],
+                'court_id'   => $row['court_id'],
+                'sale_start' => $row['sale_start'],
+                'sale_end'   => $row['sale_end'],
+            ];
+        }
+    }
+}
+// Fallback hardcode nếu chưa có dữ liệu DB
+if (empty($plans)) {
+    $plans = [
+        1 => ['name'=>'COMBO CHIỀU 14H–17H','detail'=>'5 VÉ TẶNG 0 VÉ',  'price'=>400000,  'months'=>1, 'free'=>5, 'time_range'=>'14H–17H','court_id'=>null],
+        2 => ['name'=>'COMBO CHIỀU 14H–17H','detail'=>'10 VÉ TẶNG 1 VÉ', 'price'=>720000,  'months'=>3, 'free'=>11,'time_range'=>'14H–17H','court_id'=>null],
+        3 => ['name'=>'COMBO CHIỀU 14H–17H','detail'=>'20 VÉ TẶNG 2 VÉ', 'price'=>1440000, 'months'=>6, 'free'=>22,'time_range'=>'14H–17H','court_id'=>null],
+        4 => ['name'=>'COMBO TỐI 20H–22H',  'detail'=>'20 VÉ TẶNG 2 VÉ', 'price'=>1440000, 'months'=>9, 'free'=>22,'time_range'=>'20H–22H','court_id'=>null],
+        5 => ['name'=>'COMBO TỐI 20H–22H',  'detail'=>'30 VÉ TẶNG 3 VÉ', 'price'=>2160000, 'months'=>12,'free'=>33,'time_range'=>'20H–22H','court_id'=>null],
+        6 => ['name'=>'COMBO CHIỀU 15H–18H','detail'=>'10 VÉ TẶNG 1 VÉ', 'price'=>720000,  'months'=>3, 'free'=>11,'time_range'=>'15H–18H','court_id'=>null],
+        7 => ['name'=>'COMBO CHIỀU 15H–18H','detail'=>'20 VÉ TẶNG 2 VÉ', 'price'=>1440000, 'months'=>6, 'free'=>22,'time_range'=>'15H–18H','court_id'=>null],
+    ];
+}
 
 // ── Đăng ký gói mới ──
 if ($action === '' || $action === 'register') {
     $plan_id        = intval($_POST['plan_id'] ?? 0);
     $payment_method = strtolower(trim($_POST['payment_method'] ?? 'cash'));
+    $reg_court_id   = intval($_POST['court_id'] ?? 0) ?: null; // sân đăng ký (nếu có)
 
     if (!isset($plans[$plan_id])) {
         apiError('Gói không hợp lệ.');
@@ -201,6 +228,22 @@ if ($action === '' || $action === 'register') {
         } catch (Exception $e) {}
     }
 
+    // Tạo bookings định kỳ ngay nếu cash + có court_id + có time_range
+    $booking_created = 0;
+    $effective_court = $reg_court_id ?: ($plan['court_id'] ?? null);
+    $time_range      = $plan['time_range'] ?? '';
+
+    if ($payment_method === 'cash' && $effective_court && !empty($time_range)) {
+        $rb = createMembershipBookings(
+            $membership_id, $user_id,
+            (int)$effective_court,
+            $time_range,
+            $start_date, $end_date,
+            $payment_method
+        );
+        $booking_created = $rb['created'] ?? 0;
+    }
+
     apiOk([
         'success'           => true,
         'membership_id'     => $membership_id,
@@ -216,12 +259,64 @@ if ($action === '' || $action === 'register') {
         'end_date'          => $end_date,
         'payment_method'    => $payment_method,
         'payment_status'    => $payment_status,
+        'court_id'          => $effective_court,
+        'booking_created'   => $booking_created,
         'user_name'         => $_SESSION['name'] ?? '',
         'user_email'        => $_SESSION['email'] ?? '',
     ]);
 }
 
-// ── Dùng vé hội viên ──
+// ── Tạo bookings cho membership hiện tại (nếu chưa có) ──
+if ($action === 'create_bookings') {
+    if (!isLoggedIn()) apiError('Unauthorized', 401);
+    $membership_id = intval($_POST['membership_id'] ?? 0);
+    $court_id_cb   = intval($_POST['court_id'] ?? 0);
+    if (!$membership_id || !$court_id_cb) apiError('Missing params');
+
+    // Lấy thông tin membership
+    $st = $mysqli->prepare('SELECT * FROM memberships WHERE id=? AND user_id=? LIMIT 1');
+    $uid_cb = (int)$_SESSION['user_id'];
+    $st->bind_param('ii', $membership_id, $uid_cb);
+    $st->execute();
+    $mem = $st->get_result()->fetch_assoc();
+    $st->close();
+    if (!$mem) apiError('Membership not found', 404);
+
+    // Lấy time_range từ membership_plans
+    $time_range = '';
+    $planChk = $mysqli->query("SHOW TABLES LIKE 'membership_plans'");
+    if ($planChk && $planChk->num_rows > 0) {
+        $ps = $mysqli->prepare('SELECT time_range FROM membership_plans WHERE id=? LIMIT 1');
+        $plan_id_tmp = (int)$mem['plan_id'];
+        $ps->bind_param('i', $plan_id_tmp); $ps->execute();
+        $pr = $ps->get_result()->fetch_assoc(); $ps->close();
+        $time_range = $pr['time_range'] ?? '';
+    }
+    // Fallback từ plan_name nếu không có trong DB
+    if (empty($time_range)) {
+        if (preg_match('/(\d{1,2}H[\-–]\d{1,2}H)/u', $mem['plan_name'], $m)) {
+            $time_range = $m[1];
+        }
+    }
+    if (empty($time_range)) apiError('Cannot determine time_range for this plan');
+
+    // Dùng biến tạm để tránh pass by reference trên array values
+    $mem_user_id     = (int)$mem['user_id'];
+    $mem_start_date  = (string)$mem['start_date'];
+    $mem_end_date    = (string)$mem['end_date'];
+    $mem_pay_method  = (string)$mem['payment_method'];
+
+    $rb = createMembershipBookings(
+        $membership_id,
+        $mem_user_id,
+        $court_id_cb,
+        $time_range,
+        $mem_start_date,
+        $mem_end_date,
+        $mem_pay_method
+    );
+    apiOk(['success' => true, 'created' => $rb['created'], 'skipped' => $rb['skipped'], 'time_range' => $time_range]);
+}
 if ($action === 'use_ticket') {
     $membership_id = intval($_POST['membership_id'] ?? 0);
     $booking_id    = intval($_POST['booking_id']    ?? 0) ?: null;
